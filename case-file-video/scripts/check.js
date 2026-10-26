@@ -2,6 +2,10 @@
 // Usage: node check.js <page.html> <fontsource_dir> <out_dir> poster [#sceneN]   -> out_dir/poster.png
 //        node check.js <page.html> <fontsource_dir> <out_dir> play               -> a frame every 2.9s until the end card
 //        node check.js <page.html> <fontsource_dir> <out_dir> record [seconds]   -> out_dir/*.webm (inspect with ffmpeg tiles)
+//        node check.js <page.html> <fontsource_dir> <out_dir> lint               -> phone legibility report for every scene:
+//          smallest text on the board (stage px on the 720-wide frame; warn under 18), the hero visual's size (the elements
+//          marked with B.hero(...), measured as one group; else the biggest single piece): warn when it covers under 10% of
+//          the frame AND spans under 75% of its width, and text inside the platform-button corner (stage x > 620, y > 697)
 // fontsource_dir = node_modules/@fontsource after: npm i @fontsource/anton @fontsource/special-elite @fontsource/courier-prime @fontsource/old-standard-tt
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
@@ -26,6 +30,50 @@ const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Sp
   await p.goto('http://local/page' + (mode === 'poster' && arg ? arg : ''));
   await p.waitForTimeout(1600);
   if (mode === 'poster') { await p.screenshot({ path: path.join(out, 'poster.png') }); }
+  else if (mode === 'lint') {
+    const n = await p.evaluate(() => window.__caseFile.count); let warns = 0;
+    for (let i = 1; i <= n; i++) {
+      await p.goto('http://local/page#scene' + i); await p.reload(); await p.waitForTimeout(1200);
+      const r = await p.evaluate(() => {
+        const st = document.querySelector('#stage').getBoundingClientRect(), k = 720 / st.width;
+        const layer = [...document.querySelectorAll('#board .layer')].pop();
+        const toStage = rc => ({ x: (rc.left - st.left) * k, y: (rc.top - st.top) * k, w: rc.width * k, h: rc.height * k });
+        const vis = e => { for (let x = e; x && x !== layer; x = x.parentElement) { const cs = getComputedStyle(x); if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) return false; } return true; };
+        const texts = [], corner = [];
+        layer.querySelectorAll('*').forEach(e => {
+          if (e.closest('.news') || !vis(e)) return;
+          const own = [...e.childNodes].filter(c => c.nodeType === 3).map(c => c.textContent.trim()).join(' ').trim();
+          if (!own) return;
+          const rc = e.getBoundingClientRect(), sc = e.offsetWidth ? rc.width / e.offsetWidth : 1;
+          const rot = Math.abs(Math.cos(((parseFloat(getComputedStyle(e.closest('[style*=rotate]') || e).getPropertyValue('--r')) || 0) * Math.PI) / 180)) || 1;
+          const px = parseFloat(getComputedStyle(e).fontSize) * Math.min(sc * rot, sc) * k;
+          texts.push({ px: +px.toFixed(1), t: own.slice(0, 28) });
+          const b = toStage(rc); if (b.x + b.w > 620 && b.y + b.h > 697 && b.y < 1280) corner.push(own.slice(0, 20));
+        });
+        texts.sort((a, b) => a.px - b.px);
+        let hero = { a: 0, what: '' };
+        const marked = [...layer.querySelectorAll('[data-hero]')].filter(vis);
+        if (marked.length) {
+          const bs = marked.map(e => toStage(e.getBoundingClientRect())), x0 = Math.max(0, Math.min(...bs.map(b => b.x))), y0 = Math.max(0, Math.min(...bs.map(b => b.y)));
+          const x1 = Math.min(720, Math.max(...bs.map(b => b.x + b.w))), y1 = Math.min(1280, Math.max(...bs.map(b => b.y + b.h)));
+          return { min: texts.slice(0, 2), hero: { pct: +((x1 - x0) * (y1 - y0) / (720 * 1280) * 100).toFixed(1), wpct: Math.round((x1 - x0) / 7.2), what: `hero (${marked.length} piece${marked.length > 1 ? 's' : ''})` }, corner };
+        }
+        layer.querySelectorAll('img, .chip, .yellow, .card, .q, .ph, .stamp, .news').forEach(e => {
+          if (!vis(e) || (e.classList.contains('news'))) return;
+          const b = toStage(e.getBoundingClientRect()), a = Math.max(0, Math.min(720, b.x + b.w) - Math.max(0, b.x)) * Math.max(0, Math.min(1280, b.y + b.h) - Math.max(0, b.y));
+          if (a > hero.a) hero = { a, w: Math.min(720, b.x + b.w) - Math.max(0, b.x), what: e.tagName === 'IMG' ? 'cutout' : (e.className.split(' ').find(c => ['chip', 'yellow', 'card', 'q', 'ph', 'stamp'].includes(c)) || e.className) + (e.textContent ? ' "' + e.textContent.trim().slice(0, 18) + '"' : '') };
+        });
+        return { min: texts.slice(0, 2), hero: { pct: +(hero.a / (720 * 1280) * 100).toFixed(1), wpct: Math.round((hero.w || 0) / 7.2), what: 'unmarked, biggest piece: ' + hero.what }, corner };
+      });
+      const w = [];
+      if (r.min[0] && r.min[0].px < 18) w.push(`small text ${r.min[0].px}px "${r.min[0].t}"`);
+      if (r.hero.pct < 10 && r.hero.wpct < 75) w.push(`hero visual too small: ${r.hero.pct}% of the frame, ${r.hero.wpct}% of its width`);
+      if (r.corner.length) w.push(`text under the platform buttons: ${r.corner.join(' | ')}`);
+      warns += w.length;
+      console.log(`scene ${i}: smallest text ${r.min[0] ? r.min[0].px + 'px "' + r.min[0].t + '"' : '-'} · ${r.hero.what} ${r.hero.pct}% of frame, ${r.hero.wpct}% wide${w.length ? '\n   WARN ' + w.join('\n   WARN ') : ' · ok'}`);
+    }
+    console.log(warns ? `${warns} warning(s): enlarge small notes (or cut them), make each scene's hero visual bigger, move text out of the button corner` : 'all scenes pass');
+  }
   else if (mode === 'play') {
     await p.click('#startBtn'); const stage = await p.$('#stage');
     for (let i = 0; i < 60; i++) {

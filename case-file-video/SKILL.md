@@ -15,8 +15,8 @@ Deliverables, every time:
 3. **MP4** (1080x1920, 30 fps, H.264/AAC, −14 LUFS, offline neural voice) **plus an .srt caption file**. Never skip the export.
 
 The house look. Keep it consistent; be inventive inside it.
-- **Stage.** 9:16 (720x1280 design units). A dark wooden desk lit by a lamp, light through window blinds, drifting dust, a light film look (grain, flicker, scratches). A 16:9 cork board sits in the middle (720x405 units). Above it: a yellow evidence-tape title with a small typed kicker. Below it: word-highlighted captions.
-- **Scene motion.** Each scene opens on a clean base paper. Clippings enter **stop-motion** from the nearest board edge at about 12 fps held frames: lifted while moving, pressed flat on landing, then a faint twitch. Stamps slam in three frames with a board jolt. Pins pop, then red string draws pin to pin in steps. Typed strips type on. The camera drifts smoothly, and between scenes the old board blurs and dissolves into the new one.
+- **Stage.** 9:16 (720x1280 design units). A dark wooden desk lit by a lamp, light through window blinds, drifting dust, a light film look (grain, flicker, scratches). A cork board in one of three **board shapes** (chosen per video, see Phase 1): `tall` 4:5 (default), `classic` 16:9, or `full` (the whole frame). Above it: a yellow evidence-tape title with a small typed kicker. Below it: word-highlighted captions.
+- **Scene motion.** Each scene opens on a clean base paper. Clippings enter **stop-motion** from the nearest board edge at about 12 fps held frames: lifted while moving, pressed flat on landing, then a faint twitch. Stamps slam in three frames with a board jolt. Pins pop, then red string draws pin to pin in steps. Typed strips type on. The camera drifts smoothly. Scenes change with a varied **transition** (dissolve, whip pan, smash cut, iris, sheet drop), and the board grows to full screen for the big moments.
 - **Paper.** Photo props are halftone prints with scissor-cut polygon edges and newsprint margins showing bits of article text. Single-word clippings use mixed newspaper type (bold serif, condensed headline, white-on-black) like a ransom note.
 - **Type and colour.** Anton (labels, stamps), Special Elite (typed labels), Courier Prime (captions, mono strips), Old Standard TT (newsprint). Red #b3231d, tape yellow #e9b82a.
 
@@ -44,9 +44,25 @@ Use the full-precision `kokoro-v1.0.onnx` (~325 MB) shown above, not the int8 fi
 
 ## Phase 1. Plan (no engine code yet)
 1. **Research the topic.** Search the web for anything factual, current or numeric. Find the *mystery*: the counter-intuitive fact, famous puzzle or "wait, really?" that makes this a case.
-2. **Write a creative brief** (6 lines): audience; the case framing (who or what is the "suspect", what's the "secret"); tone (playful noir, cold-case serious, pulp…); **narrator voice** (from the menu below, matched to the tone, or the user's own pick); length; **signature device**, the one visual idea this video will be remembered for (e.g. a flashlight sweeping a dark board, a recap board where every string lights up, a ransom-note title assembling letter by letter).
-3. **Scene plan table.** 7 to 9 scenes and 120 to 170 words in total. Columns: `#`, `kicker`, `title` (22 characters or fewer), `narration`, `visual idea`, `effects` (named from `references/effects.md`), `assets needed (+ fallback)`, `sound accents`.
-   - Arc: **Case file #00N** hook → **Evidence A, B, C…** (one mechanism each) → **an unsolved case / mystery** the idea explains → **the verdict**, ending "Case closed." ELI5 wording, short sentences, concrete examples.
+2. **Write a creative brief** (7 lines): audience; the case framing (who or what is the "suspect", what's the "secret"); **the hook question** (see the arc below); tone (playful noir, cold-case serious, pulp…); **narrator voice** (from the menu below, matched to the tone, or the user's own pick); **board shape** (below); **signature device**, the one visual idea this video will be remembered for (e.g. a flashlight sweeping a dark board, a recap board where every string lights up, a ransom-note title assembling letter by letter).
+3. **Scene plan table.** 7 to 9 scenes and 120 to 170 words in total. Columns: `#`, `kicker`, `title` (22 characters or fewer), `narration`, `visual idea`, `layout` (shape or `full`), `transition`, `effects` (named from `references/effects.md`), `certainty` (see the accuracy pass), `assets needed (+ fallback)`, `sound accents`.
+   - **Arc:**
+     1. **Cold-open hook (first 3 seconds).** Scene 1 opens on an irresistible question, spoken as the very first words (≤ 12 words), e.g. "What would you actually see falling into a black hole?" The hero visual (the black hole itself) must be on screen at `'@0'`, full-frame, and the question must slam in as text within the first second (`B.question`). Use `layout: 'full', head: false, transition: 'smash'`. Don't open on "Case file #00N"; the case framing comes right after, as a stamp at the end of scene 1 or the kicker of scene 2.
+     2. **Evidence A, B, C…**: one mechanism each.
+     3. **An unsolved case / mystery** that the idea explains.
+     4. **The verdict**: "Case closed" fits here, but it is not the last beat.
+     5. **The payoff (last scene).** A final surprising revelation (a twist, a mind-bending number, the "one last clue") and then **a question that invites comments** ("Would you jump in? Tell me below."). Show the question big with `B.question` so it is the last frame. Put the same question on the end card (`TOPIC: one-line verdict`).
+
+     ELI5 wording, short sentences, concrete examples.
+   - **Variety rules** (it must never feel like a slideshow):
+     - At most two scenes in a row with the same composition (title strip + board).
+     - Besides the hook, give one or two scenes a **full-screen moment** (`layout: 'full'`): the mystery, the wow moment or the payoff.
+     - Vary transitions to match the meaning: whip pan for "next", smash cut for a shock, iris for a focus or reveal, sheet drop for new evidence. Use no transition more than three times.
+     - Move the camera too: punch-ins (`B.punch`), the flashlight, stop-motion moves.
+   - **Size rules** (most viewers watch on a phone):
+     - Each scene has one hero visual, marked with `B.hero(...)`, that covers at least 10% of the frame or spans most of its width. Make it the biggest thing on the board, never a small prop among many.
+     - No text smaller than 18 px on the 720-wide stage. In practice: notes and strips ≥ 21 units on the tall board, chips ≥ 40, labels ≥ 44. Fewer, bigger notes beat many small ones; cut any note the narration doesn't need.
+     - `check.js lint` checks both (Phase 5).
    - Creativity rules:
      - Give each scene one *hero effect*, and don't repeat the same hero.
      - Use at least 8 different techniques across the video, with one set-piece "wow" moment (usually the mystery or the verdict).
@@ -54,6 +70,17 @@ Use the full-precision `kokoro-v1.0.onnx` (~325 MB) shown above, not the int8 fi
      - Match motion to meaning: chop things that get split, stamp verdicts, string together what's connected, redact secrets.
      - Vary entrances (slide, drop, unfold, flash pop, hand placement…) so the board never feels templated.
    - Label made-up example numbers on screen ("figures are examples").
+4. **Accuracy pass.** Simplify without saying anything false. For every claim in the narration, fill the `certainty` column: *established*, *mainstream theory* or *speculative*. Then:
+   - **Name the point of view when it changes the answer.** Not "you freeze at the edge" but "to someone watching from far away, you seem to freeze at the edge; you yourself fall straight through."
+   - **Frame speculation as speculation.** Use "physicists think…", "one leading idea…", "nobody knows yet…", and mark it on screen (a `THEORY` or `UNCONFIRMED` stamp). The distant future, untested hypotheses and contested numbers are speculative.
+   - **No absolutes for open questions.** Prefer "can", "some", "about" to "always", "all", "exactly". Round numbers honestly and say they are rough.
+   - Re-check the hook and the payoff twist hardest: they are the most quoted lines.
+5. **Board shape.** Ask the user which board they want, unless they already said:
+   - `tall` (4:5, **default**): the board fills most of the frame and visuals are big. Best for most topics.
+   - `classic` (16:9): a small board with lots of desk around it. Moodier, but visuals are smaller.
+   - `full`: the board is the whole frame and the title and captions float on top. Most immersive. Keep key content clear of the title area at the top and the captions at the bottom.
+
+   Set it with `BOARD_SHAPE` in the page. Whatever the shape, use `layout: 'full'` for the hook, the payoff and one or two big moments.
 
 ### Narrator voice
 The voice is chosen per video, like the tone. Pass it as `--voice` to `export.js` (or `narrate.py`). A blend `a:60,b:40` mixes two voices.
@@ -84,7 +111,7 @@ The voice is chosen per video, like the tone. Pass it as `--voice` to `export.js
 python3 kit/build.py page.src.html stickers.js page.html
 node kit/storyboard.js page.html node_modules/@fontsource storyboard.png --title "<video title>"
 ```
-   For a brand-new effect, also render one key frame with `node kit/check.js page.html node_modules/@fontsource qa poster '#sceneN'`.
+   For a brand-new effect, also render one key frame with `node kit/check.js page.html node_modules/@fontsource qa poster '#sceneN'`. Run `node kit/check.js page.html node_modules/@fontsource qa lint` and fix its warnings before showing the sheet.
 4. **Gate:** if the user is around, wait for their go-ahead or edits. If they're away, continue with the fallbacks and say which ones you used.
 
 ## Phase 3. Ask for the media you need
@@ -118,17 +145,21 @@ Then process what arrives:
    - `B.move` (stop-motion move/split), `B.shake` (rattle), `B.flash` (camera flash), `B.flashlight` (dark board + searching beam); `anim: 'spin'` (spinning newspaper), `anim: 'print'` (receipt printing)
    - `B.placeholder`, `B.onFrame`, and function cue items for custom moments
    
+   - New: `B.question` (big ransom-note question for the hook and the payoff), `B.hero` (mark the hero visual), `B.fill` (full-board backdrop for full-screen moments); scene options `layout`, `head: false`, `transition`.
+
    Build new effects from the recipes in `references/effects.md`. Tune the film look with `LOOK = {grain, flicker, scratches, weave}`. Edit the `TOPIC:` markers (page title, series line, start note, end-card line).
 3. **Export-safety (hard rules):**
    - Animate with CSS classes or `element.animate()`, or per frame via `B.onFrame`/`frameHooks`.
    - Use `later()`, never `setTimeout`.
    - New sounds use `now()` and `sfxBus`.
    - Anything else won't appear in the MP4.
-4. **Platform safe zones.** Keep key text out of the board's lower-right corner (x > 620 and y > 260 in board units), where TikTok/Reels buttons sit. Keep captions where the engine puts them.
+4. **Platform safe zones.** `B.safe` gives the keep-clear zones in board units for the current shape: keep key text out of the lower-right corner (`x > B.safe.x` and `y > B.safe.y`), where TikTok/Reels buttons sit. In `full` scenes, also keep it above the captions (`y < B.safe.cap`) and, when the title shows, below it (`y > B.safe.top`). Keep captions where the engine puts them.
 
 ## Phase 5. QA
 - `node kit/check.js page.html node_modules/@fontsource qa poster '#sceneN'` for every scene. Fix overlaps, clipped text, pins on letters and anything in the safe zone.
+- `node kit/check.js page.html node_modules/@fontsource qa lint`: every scene must pass (text ≥ 18 px, hero big enough, nothing under the platform buttons).
 - `node kit/check.js page.html node_modules/@fontsource qa play`: the run must reach the end card with no `PAGEERR`.
+- Watch the first 3 seconds of the preview on its own: is the question on screen and the hero visual visible before the first second ends? If not, fix scene 1 first.
 - Export a 6–10 s preview (`--preview 8`) and inspect a frame strip around every hero effect (`ffmpeg -ss … -vf "fps=6,scale=360:-1,tile=6x3"`).
 
 ## Phase 6. Deliver

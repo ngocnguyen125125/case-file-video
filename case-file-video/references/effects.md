@@ -26,6 +26,19 @@ Stop-motion rule of thumb: step motion at 12 fps (`steps(n,end)` in CSS, or held
 | Split apart / regroup | Built in | `B.move(el, dx, dy, {rot, frames, delay})` as a cue item: stepped stop-motion move of a placed piece |
 | Rattle (dice roll, buzzing phone) | Built in | `B.shake(el, {deg, px, dur})` as a cue item |
 
+## 1b. Scene changes and big moments
+| Effect | Status | How |
+|---|---|---|
+| Dissolve (old board blurs out) | Built in | default `transition` |
+| Whip pan (board flies off left, new one in from the right, motion blur) | Built in | `transition: 'whip'`, for "next piece of evidence" |
+| Smash cut (white flash frame + board jolt + boom) | Built in | `transition: 'smash'`, for hooks, shocks, the payoff |
+| Iris in (new scene opens from a circle) | Built in | `transition: 'iris'`, for focus or reveal |
+| Sheet drop (the new board drops on top in stepped frames) | Built in | `transition: 'drop'`, for new evidence arriving |
+| Full-screen moment (the board grows to fill the frame) | Built in | scene `layout: 'full'`, often with `head: false` and a `B.fill` backdrop |
+| Hook question slamming in word by word | Built in | `B.question(...)` cued at `'@0'` |
+| Comment-prompt ending | Built in | `B.question('Would YOU jump in?', {hot: [1]})` + a yellow "Tell me in the comments ↓" label dropping in |
+| Count-up number (token counter, light-years, dollars) | Recipe | yellow piece with a `<span class="n">`; `B.onFrame` sets the text from the scene clock once the piece has class `in` (see the worked example's last scene) |
+
 ## 2. Paper and print look
 | Effect | Status | How |
 |---|---|---|

@@ -6,6 +6,7 @@ A Claude skill that turns any knowledge topic into a ~60-second vertical explain
 
 Each run produces:
 - **A playable web page**: the same neural narrator as the MP4 baked in, a generated noir-jazz score and paper sound effects, word-synced captions.
+- **Built for phones**: a cold-open hook question in the first 3 seconds, a board shape you choose (tall 4:5 by default, classic 16:9 or full-frame), full-screen moments, varied transitions, big hero visuals checked by a legibility lint, and a twist + comment-question ending.
 - **An MP4**: 1080×1920, 30 fps, with an offline neural voice (Kokoro, picked per video from a menu of narrators), ready for Shorts, Reels or TikTok.
 
 ## Install
