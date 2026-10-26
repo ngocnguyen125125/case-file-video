@@ -204,7 +204,7 @@ html.exporting .stage{border-radius:0;box-shadow:none}html.exporting .overlay{di
       <div class="overlay" id="startOv">
         <button class="big-btn" id="startBtn" type="button">▶ Open the case</button>
         <!-- TOPIC: start note -->
-        <p id="startNote">About 60 seconds, with sound. The narrator is your browser's built-in voice and the music is generated live.</p>
+        <p id="startNote">About 60 seconds, with sound. Narrated by a neural voice; the music is generated live.</p>
       </div>
       <div class="overlay" id="endOv" hidden>
         <button class="big-btn" id="replayBtn" type="button">↺ Replay the case</button>
@@ -216,10 +216,6 @@ html.exporting .stage{border-radius:0;box-shadow:none}html.exporting .overlay{di
   <div class="ctl" id="ctl">
     <button id="playBtn" type="button">▶ Play</button>
     <button id="restartBtn" type="button">↺ Restart</button>
-    <select id="voiceSel" aria-label="Narrator voice"><option>Loading voices…</option></select>
-    <select id="rateSel" aria-label="Narration speed">
-      <option value="0.9">Speed 0.9×</option><option value="1" selected>Speed 1×</option><option value="1.1">Speed 1.1×</option>
-    </select>
     <button id="musicBtn" type="button" aria-pressed="true">Music</button>
     <button id="capBtn" type="button" aria-pressed="true">Captions</button>
     <div class="status" id="status">Press play. Tip: screen-record the stage to export a video.</div>
@@ -585,7 +581,7 @@ const SCENES = [
    } },
  { kicker: 'EVIDENCE A · BIG WORDS', title: '1 word → 3 tokens', transition: 'whip',
    fx: ['whip-pan in', 'index card', 'HERO: ransom-note letters assemble UNBELIEVABLE', 'marker cut lines + snip', 'letter groups pull apart on each spoken piece', 'typed token tags'],
-   say: "Short words, like 'cat', are usually one token. Long, rare words get split. 'Unbelievable' might become: un... believ... able.",
+   say: "But a token isn't always a word. 'Cat' is one token. 'Unbelievable' might become: un... believ... able.",
    build(B) {
      const bg = [B.news(-20, 700, 240, 220, -4), B.piece({ x: 20, y: 20, w: 680, h: 860, rot: .6, cls: 'paper', tornJ: 3 })];
      const tp = [B.tape(40, 18, -20, 80), B.tape(630, 22, 18, 80)];
@@ -601,16 +597,16 @@ const SCENES = [
      const yl = B.piece({ x: 150, y: 650, cls: 'yellow', html: '1 word = 3 tokens', rot: -3, z: 40, style: 'font-size:52px' });
      B.cue('@0', [...bg, ...tp], { stagger: .12 });
      B.hero(letters);
-     B.cue('Short', [card]);
-     B.cue('Long,', letters, { stagger: .06 });
-     B.cue('split.', [cut1, cut2, sc, () => sfx('snip')]);
+     B.cue("'Cat'", [card]);
+     B.cue("'Unbelievable'", letters, { stagger: .06 });
+     B.cue('might', [cut1, cut2, sc, () => sfx('snip')]);
      B.cue('un...', [...gm[0], tags[0]]);
      B.cue('believ...', [...gm[1], tags[1]], { stagger: .02 });
      B.cue('able.', [...gm[2], tags[2], yl], { stagger: .02 });
    } },
  { kicker: 'EVIDENCE B · THE CODE', title: 'Tokens become numbers', transition: 'drop',
    fx: ['new sheet drops onto the board', 'chips string to ID tags', 'HERO: receipt prints the token IDs line by line', 'typed number list', 'highlighter swipe', 'stamp'],
-   say: "Then every token is swapped for a number. That's all the A.I. ever sees: a long list of numbers.",
+   say: "It gets stranger. The A.I. never even sees the pieces: each one is swapped for a number. All it gets is a long list of numbers.",
    build(B) {
      const bg = [B.news(470, 640, 270, 280, 3), B.piece({ x: 16, y: 20, w: 440, h: 570, rot: -1, cls: 'manila', tornJ: 3 })];
      const tp = [B.tape(26, 18, -28, 80), B.tape(392, 16, 22, 80)];
@@ -631,16 +627,16 @@ const SCENES = [
      const yl = B.piece({ x: 120, y: 640, cls: 'yellow', html: 'Only numbers', rot: -2, z: 40, style: 'font-size:60px' });
      B.cue('@0', [...bg, ...tp], { stagger: .12 });
      B.hero(receipt, chips, ids);
-     B.cue('every', chips, { stagger: .12 });
+     B.cue('pieces:', chips, { stagger: .12 });
      B.cue('swapped', [...pA, ...ids, ...pB, ...strs], { stagger: .05 });
      B.cue('number.', [receipt]);
-     B.cue('sees:', [list]);
-     B.cue('long', [hl]);
+     B.cue('long', [list]);
+     B.cue('list', [hl]);
      B.cue('numbers.', [yl, dec]);
    } },
  { kicker: 'UNSOLVED CASE', title: 'The strawberry mystery', layout: 'full', transition: 'smash',
    fx: ['FULL-SCREEN MOMENT: the board grows to fill the frame', 'flash pop: a giant strawberry is photographed in', 'marker cross-out of the wrong answer', 'WRONG stamp', 'magnifier', 'HERO: marker circles every R the AI never sees', 'round CASE SOLVED stamp'],
-   say: "That solves a famous mystery. Ask some A.I.s how many R's are in strawberry, and they can slip. Why? They see chunks, not letters.",
+   say: "So that explains a famous puzzle. Ask some A.I.s how many R's are in strawberry, and they can slip. Why? They see chunks, not letters.",
    build(B) {
      const bg = [B.fill('background:radial-gradient(circle at 40% 40%,#3d130f 0,#130706 74%)'), B.news(-30, 1000, 280, 260, -5), B.news(480, 1010, 280, 260, 5)];
      const berry = B.sticker('strawberry', 40, 196, 470, -6, 20); berry.classList.replace('a-slide', 'a-base');
@@ -660,7 +656,7 @@ const SCENES = [
      const solved = B.stamp('Case<br>solved', 470, 500, 22, -16, { round: 136, style: 'background:#f3ecd9;mix-blend-mode:normal;opacity:1' });
      B.cue('@0', [...bg], { stagger: .08 });
      B.hero(berry, mag);
-     B.cue('mystery.', [B.flash(), berry, ex]);
+     B.cue('puzzle.', [B.flash(), berry, ex]);
      B.cue('strawberry,', [q]);
      B.cue('slip.', [xout, wrong]);
      B.cue('Why?', [mag, sees]);
@@ -669,7 +665,7 @@ const SCENES = [
    } },
  { kicker: 'EVIDENCE C · THE ANSWER', title: 'One token at a time', transition: 'iris',
    fx: ['iris-in', 'typed sentence with a blank', 'HERO: dice roll = guessing', 'probability tags', 'winner chip hops into the blank', 'stamp'],
-   say: "And when it answers you, it writes one token at a time, guessing the most likely next piece, again and again.",
+   say: "That's also how it talks back: one token at a time, guessing the most likely next piece, again and again.",
    build(B) {
      const bg = [B.news(480, 620, 260, 300, 3), B.piece({ x: 18, y: 18, w: 684, h: 600, rot: -1, cls: 'paper', tornJ: 3 })];
      const tp = [B.tape(30, 14, -24, 80), B.tape(610, 14, 22, 80)];
@@ -690,15 +686,15 @@ const SCENES = [
      const yl = B.piece({ x: 200, y: 660, cls: 'yellow', html: 'Again & again', rot: 4, z: 40, style: 'font-size:56px' });
      B.cue('@0', [...bg, ...tp], { stagger: .12 });
      B.hero(dice, chips, strip);
-     B.cue('answers', [strip]);
+     B.cue('talks', [strip]);
      B.cue('guessing', [dice, B.shake(dice, { deg: 18, px: 9, dur: .9 }), ...chips], { stagger: .1 });
      B.cue('likely', [...tags, ...pins, s1, s2, note], { stagger: .05 });
      B.cue('next', [win, nt]);
      B.cue('again', [yl]);
    } },
  { kicker: 'THE VERDICT', title: 'Case closed',
-   fx: ['HERO (WOW): recap board, every clue from the case strings into the verdict', 'VERDICT stamp', 'definition card', 'marker circle', 'CASE CLOSED stamp'],
-   say: "The verdict: a token is a puzzle piece of text. Case closed.",
+   fx: ['HERO (WOW): recap board, every clue from the case strings into the verdict; the narration answers the hook question', 'VERDICT stamp', 'definition card', 'marker circle', 'CASE CLOSED stamp'],
+   say: "So what does an A.I. actually read? Pieces of text, called tokens. Case closed.",
    build(B) {
      const tp = [B.tape(300, 316, -6, 90)];
      const clues = [
@@ -719,9 +715,9 @@ const SCENES = [
      const closed = B.stamp('Case<br>closed', 496, 520, 26, -14, { round: 140 });
      B.hero(clues, card);
      B.cue('@0', [...clues, ...tp], { stagger: .09 });
-     B.cue('verdict:', [...ends, hub, ...strs, verdict], { stagger: .07 });
-     B.cue('token', [card]);
-     B.cue('puzzle', [...pcs, ring], { stagger: .12 });
+     B.cue('read?', [...ends, hub, ...strs, verdict], { stagger: .07 });
+     B.cue('Pieces', [card]);
+     B.cue('tokens.', [...pcs, ring], { stagger: .12 });
      B.cue('Case', [closed]);
    } },
  { kicker: 'ONE LAST CLUE', title: 'One last clue', layout: 'full', head: false, transition: 'smash',
@@ -853,44 +849,19 @@ const SFX = {
 };
 function sfx(name) { if (EXP) { if (name && name !== 'none' && SFX[name]) EXP.sfxLog.push({ t: EXP.t, name }); return; } if (!AC || !name || !SFX[name]) return; try { SFX[name](); } catch (e) {} }
 
-/* ---------- narration: baked neural voice (build.py --voice), browser speech as fallback ---------- */
-const synth = window.speechSynthesis || null;
+/* ---------- narration: the neural voice baked in by build.py --voice (no browser speech) ---------- */
+// Without a baked clip (a draft page, or a scene whose text changed after baking) the scene plays with captions only.
 const BAKED = !EXP && window.__VOICE__ && Array.isArray(window.__VOICE__.scenes) ? window.__VOICE__ : null;
-let voices = [], voice = null, rate = 1, useBaked = !!BAKED;
-try { if (BAKED && localStorage.getItem('casefile.voiceMode') === 'browser') useBaked = false; } catch (e) {}
 let bakedBufs = null, bakedLoading = null, bakedSrc = null, bakedStart = null, sceneBaked = null, speakId = 0;
-// a baked clip is used only when it was rendered from the scene's current narration text
-const bakedFor = i => useBaked && bakedBufs && bakedBufs[i] && BAKED.scenes[i] && (!BAKED.scenes[i].say || BAKED.scenes[i].say === SCENES[i].say) ? BAKED.scenes[i] : null;
+const bakedFor = i => bakedBufs && bakedBufs[i] && BAKED.scenes[i] && (!BAKED.scenes[i].say || BAKED.scenes[i].say === SCENES[i].say) ? BAKED.scenes[i] : null;
 function loadBaked() {
   if (!BAKED || !AC) return Promise.resolve();
   if (bakedLoading) return bakedLoading;
   const dec = c => new Promise(ok => { try { const bin = atob(c.src), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); AC.decodeAudioData(u.buffer, ok, () => ok(null)); } catch (e) { ok(null); } });
-  return (bakedLoading = Promise.all(BAKED.scenes.map(dec)).then(b => { bakedBufs = b; if (!b.some(Boolean)) { useBaked = false; loadVoices(); } }));
+  return (bakedLoading = Promise.all(BAKED.scenes.map(dec)).then(b => { bakedBufs = b; }));
 }
 function stopBaked() { if (bakedSrc) { const src = bakedSrc; bakedSrc = null; try { src.stop(); } catch (e) {} } bakedStart = null; }
-const PREFERRED = [/natural/i, /neural/i, /online/i, /premium/i, /enhanced/i, /google uk english male/i, /daniel/i, /arthur/i, /ryan/i, /guy/i, /aaron/i, /alex/i, /google us english/i, /english/i];
-function loadVoices() {
-  voices = synth ? synth.getVoices().filter(v => /^en/i.test(v.lang)) : [];
-  const score = v => { const i = PREFERRED.findIndex(r => r.test(v.name)); return (i < 0 ? 99 : i) + (v.localService ? 0 : -.5); };
-  voices.sort((a, b) => score(a) - score(b));
-  let saved = null; try { saved = localStorage.getItem('tokencase.voice'); } catch (e) {}
-  voice = voices.find(v => v.name === saved) || voices[0] || null;
-  const opts = [];
-  if (BAKED && (!bakedBufs || bakedBufs.some(Boolean))) opts.push(`<option value="b" ${useBaked ? 'selected' : ''}>Narrator (neural voice)</option>`);
-  voices.forEach((v, i) => opts.push(`<option value="${i}" ${!useBaked && v === voice ? 'selected' : ''}>${v.name.replace(/Microsoft |Google /, '')} (${v.lang})</option>`));
-  $('#voiceSel').innerHTML = opts.length ? opts.join('') : '<option>No English voice found</option>';
-  $('#rateSel').disabled = useBaked;
-}
-loadVoices(); if (synth) synth.addEventListener?.('voiceschanged', loadVoices);
-if (BAKED) { const n = $('#startNote'); if (n) n.textContent = n.textContent.replace("your browser's built-in voice", 'a neural voice'); }
-$('#voiceSel').addEventListener('change', e => {
-  const v = e.target.value;
-  if (v === 'b') useBaked = true;
-  else { useBaked = false; voice = voices[+v] || voice; try { localStorage.setItem('tokencase.voice', voice.name); } catch (er) {} }
-  try { localStorage.setItem('casefile.voiceMode', useBaked ? 'baked' : 'browser'); } catch (er) {}
-  $('#rateSel').disabled = useBaked;
-});
-$('#rateSel').addEventListener('change', e => { rate = +e.target.value; });
+{ const n = $('#startNote'); if (n && !EXP) n.textContent = BAKED ? 'About 60 seconds, with sound. Narrated by a neural voice; the music is generated live.' : 'Draft: no narration baked in yet, so it plays with captions only (build.py --voice).'; }
 
 /* ---------- player ---------- */
 let sceneIdx = -1, layer = null, B = null, playing = false, paused = true, finished = false;
@@ -947,7 +918,7 @@ function loadScene(i, opts = {}) {
     if (c.key.startsWith('@')) return { ...c, t: parseFloat(c.key.slice(1)) };
     const key = c.key.toLowerCase(), pre = key.endsWith('*'), k = norm(key.replace('*', ''));
     let idx = words.findIndex((w, j) => j >= from && (pre ? norm(w).startsWith(k) : norm(w) === k));
-    if (idx < 0) idx = from; from = idx + 1; return { ...c, w: idx };
+    if (idx < 0) { (window.__cueMiss = window.__cueMiss || []).push({ scene: i + 1, key: c.key }); idx = from; } from = idx + 1; return { ...c, w: idx };
   });
   fireQueue = []; buildCaptions(s.say); capShown = -2;
   setHead(s, !opts.poster); renderCounter();
@@ -980,33 +951,22 @@ function fireCue(c) { c.items.forEach((el, k) => fireQueue.push({ at: clock + k 
 function speak(text) {
   speakAt = clock; const id = ++speakId; sceneBaked = null; stopBaked();
   if (EXP) { const n = EXP.narration[sceneIdx]; speechStartAt = clock + n.lead; EXP.speech.push({ scene: sceneIdx, start: EXP.t + n.lead, end: EXP.t + n.lead + n.dur }); return; }
-  if (BAKED && useBaked && !bakedBufs) { loadBaked().then(() => { if (id === speakId && playing) speak(text); }); return; }
+  if (BAKED && !bakedBufs) { loadBaked().then(() => { if (id === speakId && playing) speak(text); }); return; }
   const n = bakedFor(sceneIdx);
   if (n) {
-    if (synth) synth.cancel();
     const src = AC.createBufferSource(); src.buffer = bakedBufs[sceneIdx]; src.connect(voiceBus);
     const t = AC.currentTime + n.lead; src.start(t); bakedSrc = src; bakedStart = t; sceneBaked = n;
     spokeAny = true; ducked = true; setMusicLevel();
     src.onended = () => { if (bakedSrc === src && !speechDone) { bakedSrc = null; speechDone = true; doneAt = clock; ducked = false; setMusicLevel(); } };
     return;
   }
-  if (!synth || !voices.length) { $('#status').textContent = 'No browser voice available. Playing with captions only.'; return; }
-  synth.cancel();
-  const my = utter = new SpeechSynthesisUtterance(text);
-  if (voice) { utter.voice = voice; utter.lang = voice.lang; } utter.rate = rate; utter.pitch = 1;
-  utter.onstart = () => { if (utter !== my) return; speechStartAt = clock; spokeAny = true; ducked = true; setMusicLevel(); };
-  utter.onboundary = e => { if (utter !== my) return; if (e.name && e.name !== 'word') return; let wi = 0; while (wi + 1 < wordStarts.length && wordStarts[wi + 1] <= e.charIndex) wi++; boundaryIdx = wi; boundaryAt = clock; spokeAny = true; };
-  utter.onend = utter.onerror = () => { if (utter === my && !speechDone) { speechDone = true; doneAt = clock; ducked = false; setMusicLevel(); } };
-  synth.speak(utter);
+  $('#status').textContent = BAKED ? 'This scene has no matching narration clip (its text changed): captions only. Rebake with build.py --voice.' : 'Draft without narration: captions only.';
 }
 function wordIndexNow() {
   if (EXP) { const n = EXP.narration[sceneIdx], e = clock - speechStartAt; if (e < 0) return -1; let i = 0; while (i + 1 < n.times.length && n.times[i + 1] <= e) i++; return i; }
   if (sceneBaked) { if (bakedStart === null) return -1; const e = AC.currentTime - bakedStart; if (e < 0) return -1; const tm = sceneBaked.times; let i = 0; while (i + 1 < tm.length && tm[i + 1] <= e) i++; return i; }
-  const start = speechStartAt ?? (clock - speakAt > .7 ? speakAt + .7 : null);
-  if (start === null) return -1;
-  const est = (clock - start) * WPS * rate;
-  if (boundaryIdx >= 0) return Math.min(boundaryIdx + Math.min((clock - boundaryAt) * WPS * rate, .95), words.length - 1);
-  return Math.min(est, words.length - 1);
+  if (clock - speakAt < .7) return -1;          // captions only: pace the words at a speaking rate
+  return Math.min((clock - speakAt - .7) * WPS, words.length - 1);
 }
 function tick(now) {
   const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
@@ -1018,10 +978,9 @@ function update(dt) {
     clock += dt;
     for (const f of sceneHooks) f(clock, dt);
     const wi = wordIndexNow();
-    const noVoice = !synth || !voices.length;
     if (EXP && !speechDone && speechStartAt !== null && clock - speechStartAt >= EXP.narration[sceneIdx].dur) { speechDone = true; doneAt = clock; }
-    if (!EXP && !sceneBaked && !speechDone && (noVoice || !spokeAny) && wi >= words.length - 1 && clock - speakAt > words.length / (WPS * rate) + .6) { speechDone = true; doneAt = clock; }
-    if (!EXP && !speechDone && clock - speakAt > (sceneBaked ? sceneBaked.lead + sceneBaked.dur + 3 : words.length / (WPS * rate) * 1.9 + 4)) { speechDone = true; doneAt = clock; if (synth) synth.cancel(); stopBaked(); }
+    if (!EXP && !sceneBaked && !speechDone && !(BAKED && !bakedBufs) && wi >= words.length - 1 && clock - speakAt > words.length / WPS + .6) { speechDone = true; doneAt = clock; }
+    if (!EXP && !speechDone && clock - speakAt > (sceneBaked ? sceneBaked.lead + sceneBaked.dur + 3 : words.length / WPS * 1.9 + 4)) { speechDone = true; doneAt = clock; stopBaked(); }
     const eff = speechDone ? words.length : wi;
     cueQueue = cueQueue.filter(c => { const ok = c.t !== undefined ? clock >= c.t : eff >= c.w - .15; if (ok) fireCue(c); return !ok; });
     fireQueue = fireQueue.filter(f => { if (clock >= f.at) { reveal(f.el, f.snd); return false; } return true; });
@@ -1041,7 +1000,6 @@ function start() {
   $('#startOv').hidden = true; $('#endOv').hidden = true;
   playing = true; paused = false; finished = false; stage.classList.remove('paused');
   $('#playBtn').textContent = '❚❚ Pause';
-  if (synth) synth.cancel();
   stopBaked();
   if (!EXP) startMusic(); sfx('boom');
   if (layer) { layer.remove(); layer = null; }
@@ -1051,7 +1009,6 @@ function togglePause() {
   if (!playing) { start(); return; }
   paused = !paused; stage.classList.toggle('paused', paused);
   $('#playBtn').textContent = paused ? '▶ Resume' : '❚❚ Pause';
-  if (synth) paused ? synth.pause() : synth.resume();
   if (AC) paused ? AC.suspend() : AC.resume();
   smAnims.forEach(a => paused ? a.pause() : (a.playState === 'paused' && a.play()));
 }

@@ -11,7 +11,7 @@ Turn any knowledge topic into a ~60 s vertical video that looks like a detective
 
 Deliverables, every time:
 1. **Plan + storyboard sheet** (an image with every scene's frame, narration, effects and missing assets), shown *before* the full build.
-2. **Playable web page** (the same neural narrator as the MP4 baked in, Web Audio score, word-synced captions; the browser's own voice stays as a fallback in the voice menu). Publish it as an artifact when that tool exists.
+2. **Playable web page** (the same neural narrator as the MP4 baked in, Web Audio score, word-synced captions; no browser voice). Publish it as an artifact when that tool exists.
 3. **MP4** (1080x1920, 30 fps, H.264/AAC, −14 LUFS, offline neural voice) **plus an .srt caption file**. Never skip the export.
 
 The house look. Keep it consistent; be inventive inside it.
@@ -23,6 +23,7 @@ The house look. Keep it consistent; be inventive inside it.
 Bundled files (`SKILL_DIR` = the folder holding this file):
 - `scripts/`: `engine.template.html` (engine + worked example "What is a token?"), `render_svgs.js`, `stickers.py`, `build.py`, `check.js`, `storyboard.js`, `narrate.py`, `audition.py`, `export.js`
 - `assets/svg/`: reusable props (robot detective, magnifier, scissors, strawberry, coins, stopwatch, filing cabinet, dice); `assets/*.example.json`
+- `references/story.md`: **the story playbook**: central question, hook options and tests, clue chain, visual change, close, plus where the rules come from. Read it before writing any narration.
 - `references/effects.md`: **the effects catalog**, with what is built in and recipes for everything else. Read it while planning.
 - `references/engine-api.md`: scene-building API, layout coordinates, export-safety rules. Read it before building.
 
@@ -43,17 +44,24 @@ Also needed: Node 18+, Python 3.10+, ffmpeg, and Playwright with Chromium (insta
 Use the full-precision `kokoro-v1.0.onnx` (~325 MB) shown above, not the int8 file: the int8 voice is audibly grainier.
 
 ## Phase 1. Plan (no engine code yet)
-1. **Research the topic.** Search the web for anything factual, current or numeric. Find the *mystery*: the counter-intuitive fact, famous puzzle or "wait, really?" that makes this a case.
-2. **Write a creative brief** (7 lines): audience; the case framing (who or what is the "suspect", what's the "secret"); **the hook question** (see the arc below); tone (playful noir, cold-case serious, pulp…); **narrator voice** (from the menu below, matched to the tone, or the user's own pick); **board shape** (below); **signature device**, the one visual idea this video will be remembered for (e.g. a flashlight sweeping a dark board, a recap board where every string lights up, a ransom-note title assembling letter by letter).
-3. **Scene plan table.** 7 to 9 scenes and 120 to 170 words in total. Columns: `#`, `kicker`, `title` (22 characters or fewer), `narration`, `visual idea`, `layout` (shape or `full`), `transition`, `effects` (named from `references/effects.md`), `certainty` (see the accuracy pass), `assets needed (+ fallback)`, `sound accents`.
-   - **Arc:**
-     1. **Cold-open hook (first 3 seconds).** Scene 1 opens on an irresistible question, spoken as the very first words (≤ 12 words), e.g. "What would you actually see falling into a black hole?" The hero visual (the black hole itself) must be on screen at `'@0'`, full-frame, and the question must slam in as text within the first second (`B.question`). Use `layout: 'full', head: false, transition: 'smash'`. Don't open on "Case file #00N"; the case framing comes right after, as a stamp at the end of scene 1 or the kicker of scene 2.
-     2. **Evidence A, B, C…**: one mechanism each.
-     3. **An unsolved case / mystery** that the idea explains.
-     4. **The verdict**: "Case closed" fits here, but it is not the last beat.
-     5. **The payoff (last scene).** A final surprising revelation (a twist, a mind-bending number, the "one last clue") and then **a question that invites comments** ("Would you jump in? Tell me below."). Show the question big with `B.question` so it is the last frame. Put the same question on the end card (`TOPIC: one-line verdict`).
-
-     ELI5 wording, short sentences, concrete examples.
+1. **Research the topic.** Search the web for anything factual, current or numeric. Find the *conflict*: the counter-intuitive fact, the famous puzzle, the two points of view that disagree, the "wait, really?" that makes this a case.
+2. **Find the story** (follow `references/story.md`):
+   - **One central question** the whole video answers, e.g. "What would you actually see falling into a black hole?" Not a topic, and not five facts.
+   - **An ABT logline**: "[setup] AND [what we know], BUT [the contradiction], THEREFORE [what we'll find out]." No real BUT means no story yet, so keep researching.
+   - **Three hook options**, one each for suspense, surprise and emotion. Keep the one that passes the muted, gap, spine and truth tests.
+3. **Write a creative brief** (8 lines): audience; **central question + ABT logline**; **the hook** (the winner, plus the two runners-up so the user can swap); the case framing (who or what is the "suspect", what's the "secret"); tone (playful noir, cold-case serious, pulp…); **narrator voice** (from the menu below, matched to the tone, or the user's own pick); **board shape** (below); **signature device**, the one visual idea this video will be remembered for (e.g. a flashlight sweeping a dark board, a recap board where every string lights up, a ransom-note title assembling letter by letter).
+4. **Scene plan table.** 7 to 9 scenes and 120 to 170 words in total. Columns: `#`, `beat`, `question raised → answered`, `kicker`, `title` (22 characters or fewer), `narration`, `visual change` (a verb), `layout`, `transition`, `effects` (named from `references/effects.md`), `certainty` (see the accuracy pass), `assets needed (+ fallback)`, `sound accents`.
+   - **Arc: Hook → Body → Close.**
+     1. **Hook (the first second).** Scene 1's first frame is the hero visual plus the hook question as text (`B.question` at `'@0'`). Its first spoken words are the hook (12 words or fewer, done by about 3 s). Use `layout: 'full', head: false, transition: 'smash'`. No intro card, no logo, and no "Case file #00N" first; that framing comes right after, as a stamp at the end of scene 1 or the kicker of scene 2.
+     2. **Body: a chain of clues.** Each scene answers part of the question and raises the next. Chain scenes with **but / so / therefore**, never "and then / also / next": the first words of the scenes read in order should sound like a story. Pay off small answers along the way, but hold the big one.
+     3. **Proof.** One scene shows the idea solving something: a famous puzzle, an unsolved case, a "that's why…". It is often a full-screen moment.
+     4. **Verdict.** Answer the central question in plain words, as a callback to the hook. "Case closed" goes here, but it is not the last beat.
+     5. **Payoff (last scene).** A final surprising, true twist ("one last clue"), then **a question that invites comments**, tied to the central question ("Would you jump in?"). Show it big with `B.question` as the last frame, and put the same question on the end card (`TOPIC: one-line verdict`).
+   - **Pictures push the story:**
+     - In every scene the hero visual *does* the point (splits, fills, freezes, gets crossed out): that's the `visual change` verb.
+     - Something new happens on screen every 2–3 seconds.
+     - The hero action lands on the key word of the narration.
+   - **Talk like a person.** Address the viewer as "you", use contractions, short sentences and the odd rhetorical question. No "In this video…" or "Let's explore…". Read it aloud.
    - **Variety rules** (it must never feel like a slideshow):
      - At most two scenes in a row with the same composition (title strip + board).
      - Besides the hook, give one or two scenes a **full-screen moment** (`layout: 'full'`): the mystery, the wow moment or the payoff.
@@ -70,17 +78,18 @@ Use the full-precision `kokoro-v1.0.onnx` (~325 MB) shown above, not the int8 fi
      - Match motion to meaning: chop things that get split, stamp verdicts, string together what's connected, redact secrets.
      - Vary entrances (slide, drop, unfold, flash pop, hand placement…) so the board never feels templated.
    - Label made-up example numbers on screen ("figures are examples").
-4. **Accuracy pass.** Simplify without saying anything false. For every claim in the narration, fill the `certainty` column: *established*, *mainstream theory* or *speculative*. Then:
+5. **Accuracy pass.** Simplify without saying anything false. For every claim in the narration, fill the `certainty` column: *established*, *mainstream theory* or *speculative*. Then:
    - **Name the point of view when it changes the answer.** Not "you freeze at the edge" but "to someone watching from far away, you seem to freeze at the edge; you yourself fall straight through."
    - **Frame speculation as speculation.** Use "physicists think…", "one leading idea…", "nobody knows yet…", and mark it on screen (a `THEORY` or `UNCONFIRMED` stamp). The distant future, untested hypotheses and contested numbers are speculative.
    - **No absolutes for open questions.** Prefer "can", "some", "about" to "always", "all", "exactly". Round numbers honestly and say they are rough.
    - Re-check the hook and the payoff twist hardest: they are the most quoted lines.
-5. **Board shape.** Ask the user which board they want, unless they already said:
+6. **Board shape.** Ask the user which board they want, unless they already said:
    - `tall` (4:5, **default**): the board fills most of the frame and visuals are big. Best for most topics.
    - `classic` (16:9): a small board with lots of desk around it. Moodier, but visuals are smaller.
    - `full`: the board is the whole frame and the title and captions float on top. Most immersive. Keep key content clear of the title area at the top and the captions at the bottom.
 
    Set it with `BOARD_SHAPE` in the page. Whatever the shape, use `layout: 'full'` for the hook, the payoff and one or two big moments.
+7. **Self-check** with the checklist at the end of `references/story.md` before you build the storyboard. Send the brief and the plan table together with the storyboard sheet.
 
 ### Narrator voice
 The voice is chosen per video, like the tone. Pass it as `--voice` to `export.js` (or `narrate.py`). A blend `a:60,b:40` mixes two voices.
@@ -157,7 +166,7 @@ Then process what arrives:
 
 ## Phase 5. QA
 - `node kit/check.js page.html node_modules/@fontsource qa poster '#sceneN'` for every scene. Fix overlaps, clipped text, pins on letters and anything in the safe zone.
-- `node kit/check.js page.html node_modules/@fontsource qa lint`: every scene must pass (text ≥ 18 px, hero big enough, nothing under the platform buttons).
+- `node kit/check.js page.html node_modules/@fontsource qa lint`: every scene must pass (text ≥ 18 px, hero big enough, nothing under the platform buttons, every cue word found in the narration).
 - `node kit/check.js page.html node_modules/@fontsource qa play`: the run must reach the end card with no `PAGEERR`.
 - Watch the first 3 seconds of the preview on its own: is the question on screen and the hero visual visible before the first second ends? If not, fix scene 1 first.
 - Export a 6–10 s preview (`--preview 8`) and inspect a frame strip around every hero effect (`ffmpeg -ss … -vf "fps=6,scale=360:-1,tile=6x3"`).
@@ -168,7 +177,7 @@ Then process what arrives:
 node kit/export.js page.html node_modules/@fontsource exp out/<slug>.mp4 --models tts --pron pron.json --voice-only [--voice <from the menu>] [--speed 0.94] [--fx noir]
 python3 kit/build.py page.src.html stickers.js page.html --voice exp/voice
 ```
-   Spoken-only pronunciation fixes go in `pron.json`. If you change any narration later, rerun both commands. A scene whose text no longer matches its baked clip falls back to the browser voice.
+   Spoken-only pronunciation fixes go in `pron.json`. If you change any narration later, rerun both commands. A scene whose text no longer matches its baked clip plays with captions only, so always rebake after editing narration.
 2. Publish `page.html` as an artifact (icon `film`), or send the file.
 3. Export the full MP4 in the background (about 3.4 rendered frames per second, so 10–12 min for 70 s):
 ```bash
