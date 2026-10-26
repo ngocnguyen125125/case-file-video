@@ -713,7 +713,7 @@ const SCENES = [
 ];
 
 /* ---------- audio: music + sfx (Web Audio) ---------- */
-let AC = null, master, musicBus, sfxBus, verb, musicOn = true, ducked = false, schedTimer = null;
+let AC = null, master, musicBus, sfxBus, voiceBus, verb, musicOn = true, ducked = false, schedTimer = null;
 function initAudio(ctx) {
   if (AC && !ctx) return;
   AC = ctx || new (window.AudioContext || window.webkitAudioContext)();
@@ -721,6 +721,7 @@ function initAudio(ctx) {
   master = AC.createGain(); master.gain.value = .9; master.connect(comp); comp.connect(AC.destination);
   musicBus = AC.createGain(); musicBus.gain.value = 0; musicBus.connect(master);
   sfxBus = AC.createGain(); sfxBus.gain.value = .8; sfxBus.connect(master);
+  voiceBus = AC.createGain(); voiceBus.gain.value = 1; voiceBus.connect(master);
   // small room reverb from a generated impulse
   verb = AC.createConvolver(); const len = AC.sampleRate * 2.4, ir = AC.createBuffer(2, len, AC.sampleRate);
   for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); }
@@ -817,22 +818,42 @@ const SFX = {
 };
 function sfx(name) { if (EXP) { if (name && name !== 'none' && SFX[name]) EXP.sfxLog.push({ t: EXP.t, name }); return; } if (!AC || !name || !SFX[name]) return; try { SFX[name](); } catch (e) {} }
 
-/* ---------- narration (speechSynthesis) ---------- */
+/* ---------- narration: baked neural voice (build.py --voice), browser speech as fallback ---------- */
 const synth = window.speechSynthesis || null;
-let voices = [], voice = null, rate = 1;
-const PREFERRED = [/natural/i, /online/i, /google uk english male/i, /daniel/i, /arthur/i, /ryan/i, /guy/i, /aaron/i, /alex/i, /google us english/i, /english/i];
+const BAKED = !EXP && window.__VOICE__ && Array.isArray(window.__VOICE__.scenes) ? window.__VOICE__ : null;
+let voices = [], voice = null, rate = 1, useBaked = !!BAKED;
+try { if (BAKED && localStorage.getItem('casefile.voiceMode') === 'browser') useBaked = false; } catch (e) {}
+let bakedBufs = null, bakedLoading = null, bakedSrc = null, bakedStart = null, sceneBaked = null, speakId = 0;
+// a baked clip is used only when it was rendered from the scene's current narration text
+const bakedFor = i => useBaked && bakedBufs && bakedBufs[i] && BAKED.scenes[i] && (!BAKED.scenes[i].say || BAKED.scenes[i].say === SCENES[i].say) ? BAKED.scenes[i] : null;
+function loadBaked() {
+  if (!BAKED || !AC) return Promise.resolve();
+  if (bakedLoading) return bakedLoading;
+  const dec = c => new Promise(ok => { try { const bin = atob(c.src), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); AC.decodeAudioData(u.buffer, ok, () => ok(null)); } catch (e) { ok(null); } });
+  return (bakedLoading = Promise.all(BAKED.scenes.map(dec)).then(b => { bakedBufs = b; if (!b.some(Boolean)) { useBaked = false; loadVoices(); } }));
+}
+function stopBaked() { if (bakedSrc) { const src = bakedSrc; bakedSrc = null; try { src.stop(); } catch (e) {} } bakedStart = null; }
+const PREFERRED = [/natural/i, /neural/i, /online/i, /premium/i, /enhanced/i, /google uk english male/i, /daniel/i, /arthur/i, /ryan/i, /guy/i, /aaron/i, /alex/i, /google us english/i, /english/i];
 function loadVoices() {
-  if (!synth) return;
-  voices = synth.getVoices().filter(v => /^en/i.test(v.lang));
-  const sel = $('#voiceSel'); if (!voices.length) { sel.innerHTML = '<option>No English voice found</option>'; return; }
+  voices = synth ? synth.getVoices().filter(v => /^en/i.test(v.lang)) : [];
   const score = v => { const i = PREFERRED.findIndex(r => r.test(v.name)); return (i < 0 ? 99 : i) + (v.localService ? 0 : -.5); };
   voices.sort((a, b) => score(a) - score(b));
   let saved = null; try { saved = localStorage.getItem('tokencase.voice'); } catch (e) {}
-  voice = voices.find(v => v.name === saved) || voices[0];
-  sel.innerHTML = voices.map((v, i) => `<option value="${i}" ${v === voice ? 'selected' : ''}>${v.name.replace(/Microsoft |Google /, '')} (${v.lang})</option>`).join('');
+  voice = voices.find(v => v.name === saved) || voices[0] || null;
+  const opts = [];
+  if (BAKED && (!bakedBufs || bakedBufs.some(Boolean))) opts.push(`<option value="b" ${useBaked ? 'selected' : ''}>Narrator (neural voice)</option>`);
+  voices.forEach((v, i) => opts.push(`<option value="${i}" ${!useBaked && v === voice ? 'selected' : ''}>${v.name.replace(/Microsoft |Google /, '')} (${v.lang})</option>`));
+  $('#voiceSel').innerHTML = opts.length ? opts.join('') : '<option>No English voice found</option>';
+  $('#rateSel').disabled = useBaked;
 }
-if (synth) { loadVoices(); synth.addEventListener?.('voiceschanged', loadVoices); }
-$('#voiceSel').addEventListener('change', e => { voice = voices[+e.target.value] || voice; try { localStorage.setItem('tokencase.voice', voice.name); } catch (er) {} });
+loadVoices(); if (synth) synth.addEventListener?.('voiceschanged', loadVoices);
+$('#voiceSel').addEventListener('change', e => {
+  const v = e.target.value;
+  if (v === 'b') useBaked = true;
+  else { useBaked = false; voice = voices[+v] || voice; try { localStorage.setItem('tokencase.voice', voice.name); } catch (er) {} }
+  try { localStorage.setItem('casefile.voiceMode', useBaked ? 'baked' : 'browser'); } catch (er) {}
+  $('#rateSel').disabled = useBaked;
+});
 $('#rateSel').addEventListener('change', e => { rate = +e.target.value; });
 
 /* ---------- player ---------- */
@@ -918,12 +939,22 @@ function reveal(el, withSfx) { if (typeof el === 'function') { el(); return; } i
 function fireCue(c) { c.items.forEach((el, k) => fireQueue.push({ at: clock + k * c.stagger, el, snd: k === 0 || (el.dataset && (el.dataset.sfx === 'stamp' || el.dataset.sfx === 'string' || el.dataset.sfx === 'marker')) })); }
 
 function speak(text) {
-  speakAt = clock;
+  speakAt = clock; const id = ++speakId; sceneBaked = null; stopBaked();
   if (EXP) { const n = EXP.narration[sceneIdx]; speechStartAt = clock + n.lead; EXP.speech.push({ scene: sceneIdx, start: EXP.t + n.lead, end: EXP.t + n.lead + n.dur }); return; }
+  if (BAKED && useBaked && !bakedBufs) { loadBaked().then(() => { if (id === speakId && playing) speak(text); }); return; }
+  const n = bakedFor(sceneIdx);
+  if (n) {
+    if (synth) synth.cancel();
+    const src = AC.createBufferSource(); src.buffer = bakedBufs[sceneIdx]; src.connect(voiceBus);
+    const t = AC.currentTime + n.lead; src.start(t); bakedSrc = src; bakedStart = t; sceneBaked = n;
+    spokeAny = true; ducked = true; setMusicLevel();
+    src.onended = () => { if (bakedSrc === src && !speechDone) { bakedSrc = null; speechDone = true; doneAt = clock; ducked = false; setMusicLevel(); } };
+    return;
+  }
   if (!synth || !voices.length) { $('#status').textContent = 'No browser voice available. Playing with captions only.'; return; }
   synth.cancel();
   const my = utter = new SpeechSynthesisUtterance(text);
-  if (voice) { utter.voice = voice; utter.lang = voice.lang; } utter.rate = rate; utter.pitch = .92;
+  if (voice) { utter.voice = voice; utter.lang = voice.lang; } utter.rate = rate; utter.pitch = 1;
   utter.onstart = () => { if (utter !== my) return; speechStartAt = clock; spokeAny = true; ducked = true; setMusicLevel(); };
   utter.onboundary = e => { if (utter !== my) return; if (e.name && e.name !== 'word') return; let wi = 0; while (wi + 1 < wordStarts.length && wordStarts[wi + 1] <= e.charIndex) wi++; boundaryIdx = wi; boundaryAt = clock; spokeAny = true; };
   utter.onend = utter.onerror = () => { if (utter === my && !speechDone) { speechDone = true; doneAt = clock; ducked = false; setMusicLevel(); } };
@@ -931,6 +962,7 @@ function speak(text) {
 }
 function wordIndexNow() {
   if (EXP) { const n = EXP.narration[sceneIdx], e = clock - speechStartAt; if (e < 0) return -1; let i = 0; while (i + 1 < n.times.length && n.times[i + 1] <= e) i++; return i; }
+  if (sceneBaked) { if (bakedStart === null) return -1; const e = AC.currentTime - bakedStart; if (e < 0) return -1; const tm = sceneBaked.times; let i = 0; while (i + 1 < tm.length && tm[i + 1] <= e) i++; return i; }
   const start = speechStartAt ?? (clock - speakAt > .7 ? speakAt + .7 : null);
   if (start === null) return -1;
   const est = (clock - start) * WPS * rate;
@@ -949,8 +981,8 @@ function update(dt) {
     const wi = wordIndexNow();
     const noVoice = !synth || !voices.length;
     if (EXP && !speechDone && speechStartAt !== null && clock - speechStartAt >= EXP.narration[sceneIdx].dur) { speechDone = true; doneAt = clock; }
-    if (!EXP && !speechDone && (noVoice || !spokeAny) && wi >= words.length - 1 && clock - speakAt > words.length / (WPS * rate) + .6) { speechDone = true; doneAt = clock; }
-    if (!EXP && !speechDone && clock - speakAt > words.length / (WPS * rate) * 1.9 + 4) { speechDone = true; doneAt = clock; if (synth) synth.cancel(); }
+    if (!EXP && !sceneBaked && !speechDone && (noVoice || !spokeAny) && wi >= words.length - 1 && clock - speakAt > words.length / (WPS * rate) + .6) { speechDone = true; doneAt = clock; }
+    if (!EXP && !speechDone && clock - speakAt > (sceneBaked ? sceneBaked.lead + sceneBaked.dur + 3 : words.length / (WPS * rate) * 1.9 + 4)) { speechDone = true; doneAt = clock; if (synth) synth.cancel(); stopBaked(); }
     const eff = speechDone ? words.length : wi;
     cueQueue = cueQueue.filter(c => { const ok = c.t !== undefined ? clock >= c.t : eff >= c.w - .15; if (ok) fireCue(c); return !ok; });
     fireQueue = fireQueue.filter(f => { if (clock >= f.at) { reveal(f.el, f.snd); return false; } return true; });
@@ -966,11 +998,12 @@ function next() {
   $('#endOv').hidden = false; $('#playBtn').textContent = '▶ Play'; sceneIdx = SCENES.length - 1; renderCounter();
 }
 function start() {
-  if (!EXP) { initAudio(); AC.resume(); }
+  if (!EXP) { initAudio(); AC.resume(); loadBaked(); }
   $('#startOv').hidden = true; $('#endOv').hidden = true;
   playing = true; paused = false; finished = false; stage.classList.remove('paused');
   $('#playBtn').textContent = '❚❚ Pause';
   if (synth) synth.cancel();
+  stopBaked();
   if (!EXP) startMusic(); sfx('boom');
   if (layer) { layer.remove(); layer = null; }
   loadScene(0);

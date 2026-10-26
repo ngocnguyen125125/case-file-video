@@ -5,8 +5,8 @@ A Claude skill that turns any knowledge topic into a ~60-second vertical explain
 ![preview](docs/preview.jpg)
 
 Each run produces:
-- **A playable web page**: browser speech narration, a generated noir-jazz score and paper sound effects, word-synced captions.
-- **An MP4**: 1080×1920, 30 fps, with an offline neural voice (Kokoro), ready for Shorts, Reels or TikTok.
+- **A playable web page**: the same neural narrator as the MP4 baked in, a generated noir-jazz score and paper sound effects, word-synced captions.
+- **An MP4**: 1080×1920, 30 fps, with an offline neural voice (Kokoro, picked per video from a menu of narrators), ready for Shorts, Reels or TikTok.
 
 ## Install
 
@@ -28,7 +28,7 @@ Ask Claude something like *"Make a case-file video explaining how vaccines work"
 Example storyboard sheet: [docs/storyboard-example.jpg](docs/storyboard-example.jpg)
 
 ## Requirements (installed by the skill when missing)
-Node 18+, Python 3.10+, ffmpeg, Playwright + Chromium, and the Python packages `kokoro-onnx`, `soundfile`, `opencv-python-headless`, `scipy`, `pillow` and `numpy`. The Kokoro model files (~120 MB) are downloaded from the kokoro-onnx GitHub releases.
+Node 18+, Python 3.10+, ffmpeg, Playwright + Chromium, and the Python packages `kokoro-onnx`, `soundfile`, `opencv-python-headless`, `scipy`, `pillow` and `numpy`. The full-precision Kokoro model files (~350 MB) are downloaded from the kokoro-onnx GitHub releases.
 
 ## Layout
 ```
@@ -38,10 +38,11 @@ case-file-video/
     engine.template.html   the player engine + worked example ("What is a token?")
     render_svgs.js         SVG props -> PNG
     stickers.py            PNG -> halftone newsprint cutouts (embedded in the page)
-    build.py               inlines cutouts into the page
+    build.py               inlines cutouts (and the baked narration) into the page
     check.js               headless QA (poster frames, playthrough)
     storyboard.js          storyboard sheet: every scene's frame + narration, effects, assets needed
-    narrate.py             Kokoro narration + word timings
+    narrate.py             Kokoro narration (voice blends, noir treatment) + word timings
+    audition.py            renders one line in several voices to pick a narrator by ear
     export.js              frame-accurate MP4 export (+ .srt, loudness-normalized)
   references/
     effects.md             effects catalog: built-in vs recipes vs needs-assets

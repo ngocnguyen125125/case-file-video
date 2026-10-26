@@ -1,6 +1,8 @@
 // Frame-accurate MP4 export of a case-file page: 1080x1920, 30 fps, H.264 + AAC.
-// Usage: node export.js <page.html> <fontsource_dir> <work_dir> <out.mp4> [--voice am_michael] [--speed 0.95] [--pron pron.json] [--models <kokoro dir>] [--fps 30] [--preview 6]
-//  1. reads each scene's narration from the page and renders it with narrate.py (Kokoro voice + word timings)
+// Usage: node export.js <page.html> <fontsource_dir> <work_dir> <out.mp4> [--voice am_michael:60,am_fenrir:40] [--speed 0.94] [--fx noir|clean]
+//          [--pron pron.json] [--models <kokoro dir>] [--fps 30] [--preview 6] [--reuse-voice] [--voice-only]
+//  1. reads each scene's narration from the page and renders it with narrate.py (Kokoro voice + word timings) into <work_dir>/voice
+//     --voice-only stops here (bake the voice into the page with build.py --voice <work_dir>/voice, then export with --reuse-voice)
 //  2. steps the page's virtual clock frame by frame and pipes JPEG frames into ffmpeg
 //  3. renders the Web Audio music + sound effects offline (OfflineAudioContext) from the page's event log
 //  4. mixes narration (placed at the exact times the page started each line) over music + sfx and muxes the MP4
@@ -12,7 +14,7 @@ const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
 const [page, fdir, work, outMp4] = args;
 const FPS = +opt('fps', 30), PREVIEW = +opt('preview', 0);
-fs.mkdirSync(work, { recursive: true });
+fs.mkdirSync(work, { recursive: true }); fs.mkdirSync(path.dirname(path.resolve(outMp4)), { recursive: true });
 const F = (fam, dir, w, file) => `@font-face{font-family:'${fam}';font-weight:${w};src:url(http://local/f/${dir}/files/${file})}`;
 const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Special Elite', 'special-elite', 400, 'special-elite-latin-400-normal.woff2'),
   F('Courier Prime', 'courier-prime', 400, 'courier-prime-latin-400-normal.woff2'), F('Courier Prime', 'courier-prime', 700, 'courier-prime-latin-700-normal.woff2'),
@@ -42,10 +44,11 @@ const run = (cmd, a) => execFileSync(cmd, a, { stdio: 'inherit' });
   const says = await p.evaluate(() => window.__EXPORT__.says);
   await ctx.close();
   fs.writeFileSync(path.join(work, 'says.json'), JSON.stringify(says));
-  const nar = [path.join(__dirname, 'narrate.py'), path.join(work, 'says.json'), path.join(work, 'voice'), '--voice', opt('voice', 'am_michael'), '--speed', opt('speed', '0.95'), '--models', opt('models', '.')];
+  const nar = [path.join(__dirname, 'narrate.py'), path.join(work, 'says.json'), path.join(work, 'voice'), '--voice', opt('voice', 'am_michael:60,am_fenrir:40'), '--speed', opt('speed', '0.94'), '--fx', opt('fx', 'noir'), '--models', opt('models', '.')];
   if (opt('pron')) nar.push('--pron', opt('pron'));
   if (!(args.includes('--reuse-voice') && fs.existsSync(path.join(work, 'voice', 'narration.json')))) run('python3', nar);
   const narration = JSON.parse(fs.readFileSync(path.join(work, 'voice', 'narration.json'), 'utf8'));
+  if (args.includes('--voice-only')) { await browser.close(); console.log('voice ready in', path.join(work, 'voice')); return; }
 
   // 2. frames -> ffmpeg
   ({ ctx, p } = await openPage(browser, { narration }));

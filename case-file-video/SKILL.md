@@ -11,7 +11,7 @@ Turn any knowledge topic into a ~60 s vertical video that looks like a detective
 
 Deliverables, every time:
 1. **Plan + storyboard sheet** (an image with every scene's frame, narration, effects and missing assets), shown *before* the full build.
-2. **Playable web page** (browser voice, Web Audio score, word-synced captions). Publish it as an artifact when that tool exists.
+2. **Playable web page** (the same neural narrator as the MP4 baked in, Web Audio score, word-synced captions; the browser's own voice stays as a fallback in the voice menu). Publish it as an artifact when that tool exists.
 3. **MP4** (1080x1920, 30 fps, H.264/AAC, −14 LUFS, offline neural voice) **plus an .srt caption file**. Never skip the export.
 
 The house look. Keep it consistent; be inventive inside it.
@@ -21,7 +21,7 @@ The house look. Keep it consistent; be inventive inside it.
 - **Type and colour.** Anton (labels, stamps), Special Elite (typed labels), Courier Prime (captions, mono strips), Old Standard TT (newsprint). Red #b3231d, tape yellow #e9b82a.
 
 Bundled files (`SKILL_DIR` = the folder holding this file):
-- `scripts/`: `engine.template.html` (engine + worked example "What is a token?"), `render_svgs.js`, `stickers.py`, `build.py`, `check.js`, `storyboard.js`, `narrate.py`, `export.js`
+- `scripts/`: `engine.template.html` (engine + worked example "What is a token?"), `render_svgs.js`, `stickers.py`, `build.py`, `check.js`, `storyboard.js`, `narrate.py`, `audition.py`, `export.js`
 - `assets/svg/`: reusable props (robot detective, magnifier, scissors, strawberry, coins, stopwatch, filing cabinet, dice); `assets/*.example.json`
 - `references/effects.md`: **the effects catalog**, with what is built in and recipes for everything else. Read it while planning.
 - `references/engine-api.md`: scene-building API, layout coordinates, export-safety rules. Read it before building.
@@ -36,14 +36,15 @@ mkdir -p work && cd work
 cp -r "$SKILL_DIR/scripts" kit && cp -r "$SKILL_DIR/assets/svg" svg && cp "$SKILL_DIR"/assets/*.json .
 npm init -y >/dev/null && npm i @fontsource/anton @fontsource/special-elite @fontsource/courier-prime @fontsource/old-standard-tt
 pip install --break-system-packages -q kokoro-onnx soundfile opencv-python-headless scipy pillow numpy
-mkdir -p tts && curl -sSL -o tts/kokoro.onnx https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.int8.onnx \
+mkdir -p tts && curl -sSL -o tts/kokoro.onnx https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx \
   && curl -sSL -o tts/voices.bin https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
 ```
 Also needed: Node 18+, Python 3.10+, ffmpeg, and Playwright with Chromium (install them only if missing; don't reinstall a preinstalled Playwright).
+Use the full-precision `kokoro-v1.0.onnx` (~325 MB) shown above, not the int8 file: the int8 voice is audibly grainier.
 
 ## Phase 1. Plan (no engine code yet)
 1. **Research the topic.** Search the web for anything factual, current or numeric. Find the *mystery*: the counter-intuitive fact, famous puzzle or "wait, really?" that makes this a case.
-2. **Write a creative brief** (5 lines): audience; the case framing (who or what is the "suspect", what's the "secret"); tone (playful noir, cold-case serious, pulp…); length; **signature device**, the one visual idea this video will be remembered for (e.g. a flashlight sweeping a dark board, a recap board where every string lights up, a ransom-note title assembling letter by letter).
+2. **Write a creative brief** (6 lines): audience; the case framing (who or what is the "suspect", what's the "secret"); tone (playful noir, cold-case serious, pulp…); **narrator voice** (from the menu below, matched to the tone, or the user's own pick); length; **signature device**, the one visual idea this video will be remembered for (e.g. a flashlight sweeping a dark board, a recap board where every string lights up, a ransom-note title assembling letter by letter).
 3. **Scene plan table.** 7 to 9 scenes and 120 to 170 words in total. Columns: `#`, `kicker`, `title` (22 characters or fewer), `narration`, `visual idea`, `effects` (named from `references/effects.md`), `assets needed (+ fallback)`, `sound accents`.
    - Arc: **Case file #00N** hook → **Evidence A, B, C…** (one mechanism each) → **an unsolved case / mystery** the idea explains → **the verdict**, ending "Case closed." ELI5 wording, short sentences, concrete examples.
    - Creativity rules:
@@ -53,6 +54,27 @@ Also needed: Node 18+, Python 3.10+, ffmpeg, and Playwright with Chromium (insta
      - Match motion to meaning: chop things that get split, stamp verdicts, string together what's connected, redact secrets.
      - Vary entrances (slide, drop, unfold, flash pop, hand placement…) so the board never feels templated.
    - Label made-up example numbers on screen ("figures are examples").
+
+### Narrator voice
+The voice is chosen per video, like the tone. Pass it as `--voice` to `export.js` (or `narrate.py`). A blend `a:60,b:40` mixes two voices.
+
+| `--voice` | Sound | Good for |
+|---|---|---|
+| `am_michael:60,am_fenrir:40` **(default)** | gritty American detective | classic noir, most topics |
+| `am_michael` | warm, steady American male | calm, clear explainers |
+| `am_fenrir` | deeper, rougher American male | cold-case serious, dark history |
+| `am_puck` | brighter, lively American male | playful pulp, fast fun topics |
+| `bm_george:60,bm_fable:40` | British inspector | Sherlock-style cases, history, science |
+| `bm_george` | measured British male | serious, documentary feel |
+| `bm_fable` | lighter British storyteller | whimsical, kids' topics |
+| `af_heart` | warm female narrator | friendly ELI5, health, everyday life |
+| `af_bella` | smooth, sultry female | femme-fatale noir, glamorous mysteries |
+
+- Default speed is `--speed 0.94`. Go to 0.9 for a slower, heavier read and 1.0 for a punchy one.
+- `--fx noir` (default) adds a warm "radio narrator" treatment. `--fx clean` gives a dry voice.
+- If the user wants to choose by ear, or hasn't heard the voices before, run an audition and send the MP3s:
+  `python3 kit/audition.py audition --models tts [--voices "am_puck;af_bella"] [--text "<a line from the script>"]`
+- Write narration for the ear. Use commas and `...` where a pause should fall, and keep sentences short. The voice reads each scene in one pass, and its pauses also drive the caption timing.
 
 ## Phase 2. Storyboard (show it before the full build)
 1. Make props (Phase 4, step 1) for what you can draw yourself. Leave media you need from the user as **`B.placeholder({x,y,w,h,label})`** cards: red dashed "ASSET NEEDED" boxes in their final place.
@@ -84,7 +106,7 @@ Send one numbered request list. For each item, give:
 
 Then process what arrives:
 - **Photos.** Cut the subject out: try `pip install rembg[cli]` then `rembg i in.jpg out.png`. If that fails, ask for a transparent PNG or crop to a rectangle with a scissor-cut edge. Save as `raw/<name>_raw.png`, add a spec entry, and run `stickers.py`.
-- **Voiceover.** Put one WAV per scene in the voice folder and write `narration.json` (`wav`, `dur`, `lead`, `times`). Spread word start times over each clip's voiced span with the same weighting `narrate.py` uses, then export with `--reuse-voice`.
+- **Voiceover.** Put one WAV per scene in `exp/voice/` and write `narration.json` (`wav`, `dur`, `lead`, `times`). Spread word start times over each clip's voiced span the way `narrate.py` does (anchor sentence starts to the pauses, spread words by length). Then bake it into the page with `build.py --voice exp/voice` and export with `--reuse-voice`.
 - **Footage.** Keep it short. Extract it to a frame sequence with ffmpeg and draw it on a canvas from `B.onFrame` (export-safe). Don't use a live `<video>` element.
 
 ## Phase 4. Build
@@ -110,15 +132,20 @@ Then process what arrives:
 - Export a 6–10 s preview (`--preview 8`) and inspect a frame strip around every hero effect (`ffmpeg -ss … -vf "fps=6,scale=360:-1,tile=6x3"`).
 
 ## Phase 6. Deliver
-1. Publish `page.html` as an artifact (icon `film`), or send the file.
-2. Export the full MP4 in the background (about 3.4 rendered frames per second, so 10–12 min for 70 s):
+1. Render the narration once, then bake it into the page so the web page and the MP4 share the same voice:
 ```bash
-node kit/export.js page.html node_modules/@fontsource exp out/<slug>.mp4 --models tts --pron pron.json [--voice am_michael] [--reuse-voice]
+node kit/export.js page.html node_modules/@fontsource exp out/<slug>.mp4 --models tts --pron pron.json --voice-only [--voice <from the menu>] [--speed 0.94] [--fx noir]
+python3 kit/build.py page.src.html stickers.js page.html --voice exp/voice
 ```
-   Voices: `am_michael` (default), `am_fenrir`, `bm_george`, `af_heart`. Spoken-only pronunciation fixes go in `pron.json`.
-3. Verify:
+   Spoken-only pronunciation fixes go in `pron.json`. If you change any narration later, rerun both commands. A scene whose text no longer matches its baked clip falls back to the browser voice.
+2. Publish `page.html` as an artifact (icon `film`), or send the file.
+3. Export the full MP4 in the background (about 3.4 rendered frames per second, so 10–12 min for 70 s):
+```bash
+node kit/export.js page.html node_modules/@fontsource exp out/<slug>.mp4 --models tts --pron pron.json --reuse-voice
+```
+4. Verify:
    - `ffprobe` shows 1080x1920, 30 fps, h264 + aac.
    - A 1-fps frame strip of the whole video looks right.
    - `ffmpeg -af ebur128` gives about −14 LUFS.
    - The `.srt` exists.
-4. Send the MP4 and the .srt. In one line, say which assets were placeholders or fallbacks and what sending real ones would improve.
+5. Send the MP4 and the .srt. In one line, say which assets were placeholders or fallbacks and what sending real ones would improve.
