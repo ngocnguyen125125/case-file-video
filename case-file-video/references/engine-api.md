@@ -1,20 +1,23 @@
 # Engine API (scripts/engine.template.html)
 
 ## Coordinates and layers
-- The stage is 720x1280 units (exported at 1.5x = 1080x1920). Scene code works in **board units**, origin at the board's top-left; `B.W` x `B.H` gives the size:
+- `FORMAT` picks the stage: `'9:16'` = 720x1280 units (exported 1080x1920) or `'16:9'` = 1280x720 units (exported 1920x1080). Scene code works in **board units**, origin at the board's top-left; `B.W` x `B.H` gives the size:
 
-| Shape (`BOARD_SHAPE` or scene `layout`) | Board units | Where it sits on the stage | Title / captions |
-|---|---|---|---|
-| `tall` (4:5, default for new videos) | 720 x 900 | x 42, y 170, scaled to 0.883 (636 x 795) | title y 46, captions y 986 |
-| `classic` (16:9) | 720 x 405 | x 0, y 437 | title y 268, captions y 880 |
-| `full` (whole frame) | 720 x 1280 | the whole stage | title floats at y 70, captions float at y 952 |
+| Format | Shape (`BOARD_SHAPE` or scene `layout`) | Board units | Where it sits on the stage | Title / captions (stage y) |
+|---|---|---|---|---|
+| 9:16 | `tall` (default) | 720 x 900 | x 65, y 222, drawn at 0.82 (590 x 738) | title 118, captions 868 (over the board's bottom edge) |
+| 9:16 | `classic` | 720 x 405 | x 0, y 437 | title 268, captions 880 |
+| 9:16 | `full` | 720 x 1280 | the whole stage | title floats at 118, captions float at 868 |
+| 16:9 | `classic` (default) | 720 x 405 | x 190, y 104, drawn at 1.25 (900 x 506) | title 10, captions 628 |
+| 16:9 | `tall` | 720 x 900 | x 439, y 104, drawn at 0.56 (404 x 505) | title 10, captions 628 |
+| 16:9 | `full` | 1280 x 720 | the whole stage | title floats at 18, captions float at 612 |
 
-- `B.safe` = keep-clear zones in board units: `{x, y}` = platform-button corner (keep key text out of `x > safe.x && y > safe.y`), `cap` = where captions start (full layout), `top` = where the title ends.
+- `B.safe` = the clear area in board units, for key text: between `top` (below the title, or below the platform tabs when `head: false`) and `cap` (above the captions and the platform description), and out of the button corner `x > safe.x && y > safe.y`. In 9:16 the engine reserves the platform UI (top 15%, bottom 25%, right-edge buttons from y 697); in 16:9 only the bottom edge.
 - Above the board: kicker + yellow title (`kicker`, `title`; hide it per scene with `head: false`). Below it: karaoke captions from `say`. Bottom: series line (no progress bar).
 - When consecutive scenes use different shapes, the board animates into the new shape during the transition.
 - Inside a scene: `layer > .zoom (punch-ins) > .cam (Ken Burns drift) > pieces`. z-index guide: base papers 1, props 20–35, yellow labels 40, tape 60, highlights 65, stamps 70, strings 78, pins 80, markers 85.
-- Platform safe zone: keep key text out of `x > B.safe.x, y > B.safe.y` (TikTok/Reels buttons). Classic: x > 620, y > 260. Tall: x > 654, y > 597. Full: x > 620, y > 697.
-- Phone legibility (checked by `check.js lint`): no text under 18 stage px (≈ 21 units on the tall board), and a hero visual marked with `B.hero` that covers ≥ 10% of the frame or spans ≥ 75% of its width.
+- Platform safe zone (9:16): keep key text out of `x > B.safe.x, y > B.safe.y` (TikTok/Reels buttons). Classic: x > 620, y > 260. Tall: x > 677, y > 579. Full: x > 620, y > 697. 16:9 has no button corner.
+- Legibility (checked by `check.js lint`): no text under 18 stage units (≈ 22 units on the 9:16 tall board), and a hero visual marked with `B.hero` that covers ≥ 10% of the frame or spans ≥ 75% of its width.
 
 ## A scene
 ```js
@@ -53,7 +56,8 @@
 | `B.cue(key, items, {stagger})` | Reveal `items` when the narrator says `key` (exact word, punctuation ignored; `word*` = prefix; `'@1.5'` = seconds after scene start). Cues must follow narration order. Items may be elements or **functions** (called at that moment). |
 
 ## Globals you may tune
-- `BOARD_SHAPE`: `'tall'` (default), `'classic'` or `'full'`.
+- `FORMAT`: `'9:16'` (default) or `'16:9'`.
+- `BOARD_SHAPE`: `'tall'` (default for 9:16), `'classic'` (default for 16:9) or `'full'`.
 - `LOOK = { grain, flicker, scratches, weave }`: film look, 0 to 1.
 - `TOPIC:` markers: page `<title>`, series line, start note, end-card verdict.
 - `R(a,b)` = seeded random (layout stays identical between previews and export); `Math.random()` for per-frame jitter.

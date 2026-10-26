@@ -5,17 +5,17 @@ description: "Plan, storyboard and produce a vertical noir case-file explainer v
 
 # Case-file explainer video
 
-Turn any knowledge topic into a ~60 s vertical video that looks like a detective's evidence board come to life: halftone photos snipped out of newsprint, ransom-note word clippings, red stamps, pins and red string, typewriter captions, all moving like hand-animated stop-motion paper, with a noir-jazz score and a narrator.
+Turn any knowledge topic into a ~60 s video (vertical 9:16 or horizontal 16:9) that looks like a detective's evidence board come to life: halftone photos snipped out of newsprint, ransom-note word clippings, red stamps, pins and red string, typewriter captions, all moving like hand-animated stop-motion paper, with a noir-jazz score and a narrator.
 
 **You are the director.** This skill gives you an engine, a library of effects and a process. How you use them is your call. Push for the most inventive, memorable video the topic allows, not a re-skin of the example. Plan first, show a storyboard, ask for the media you need, then build and export.
 
 Deliverables, every time:
 1. **Plan + storyboard sheet** (an image with every scene's frame, narration, effects and missing assets), shown *before* the full build.
 2. **Playable web page** (the same neural narrator as the MP4 baked in, Web Audio score, word-synced captions; no browser voice). Publish it as an artifact when that tool exists.
-3. **MP4** (1080x1920, 30 fps, H.264/AAC, −14 LUFS, offline neural voice) **plus an .srt caption file**. Never skip the export.
+3. **MP4** (1080x1920 for 9:16 or 1920x1080 for 16:9, 30 fps, H.264/AAC, −14 LUFS, offline neural voice) **plus an .srt caption file**. Never skip the export.
 
 The house look. Keep it consistent; be inventive inside it.
-- **Stage.** 9:16 (720x1280 design units). A dark wooden desk lit by a lamp, light through window blinds, drifting dust, a light film look (grain, flicker, scratches). A cork board in one of three **board shapes** (chosen per video, see Phase 1): `tall` 4:5 (default), `classic` 16:9, or `full` (the whole frame). Above it: a yellow evidence-tape title with a small typed kicker. Below it: word-highlighted captions.
+- **Stage.** 9:16 (720x1280 design units) or 16:9 (1280x720), chosen per video (`FORMAT`). A dark wooden desk lit by a lamp, light through window blinds, drifting dust, a light film look (grain, flicker, scratches). A cork board in one of three **board shapes** (chosen per video, see Phase 1): `tall` 4:5, `classic` 16:9, or `full` (the whole frame). Above it: a yellow evidence-tape title with a small typed kicker. Below it: word-highlighted captions.
 - **Scene motion.** Each scene opens on a clean base paper. Clippings enter **stop-motion** from the nearest board edge at about 12 fps held frames: lifted while moving, pressed flat on landing, then a faint twitch. Stamps slam in three frames with a board jolt. Pins pop, then red string draws pin to pin in steps. Typed strips type on. The camera drifts smoothly. Scenes change with a varied **transition** (dissolve, whip pan, smash cut, iris, sheet drop), and the board grows to full screen for the big moments.
 - **Paper.** Photo props are halftone prints with scissor-cut polygon edges and newsprint margins showing bits of article text. Single-word clippings use mixed newspaper type (bold serif, condensed headline, white-on-black) like a ransom note.
 - **Type and colour.** Anton (labels, stamps), Special Elite (typed labels), Courier Prime (captions, mono strips), Old Standard TT (newsprint). Red #b3231d, tape yellow #e9b82a.
@@ -69,7 +69,7 @@ Use the full-precision `kokoro-v1.0.onnx` (~325 MB) shown above, not the int8 fi
      - Move the camera too: punch-ins (`B.punch`), the flashlight, stop-motion moves.
    - **Size rules** (most viewers watch on a phone):
      - Each scene has one hero visual, marked with `B.hero(...)`, that covers at least 10% of the frame or spans most of its width. Make it the biggest thing on the board, never a small prop among many.
-     - No text smaller than 18 px on the 720-wide stage. In practice: notes and strips ≥ 21 units on the tall board, chips ≥ 40, labels ≥ 44. Fewer, bigger notes beat many small ones; cut any note the narration doesn't need.
+     - No text smaller than 18 stage units. In practice for 9:16: notes and strips ≥ 23 units on the tall board (it is drawn at 0.82×), chips ≥ 40, labels ≥ 44. Fewer, bigger notes beat many small ones; cut any note the narration doesn't need.
      - `check.js lint` checks both (Phase 5).
    - Creativity rules:
      - Give each scene one *hero effect*, and don't repeat the same hero.
@@ -83,12 +83,16 @@ Use the full-precision `kokoro-v1.0.onnx` (~325 MB) shown above, not the int8 fi
    - **Frame speculation as speculation.** Use "physicists think…", "one leading idea…", "nobody knows yet…", and mark it on screen (a `THEORY` or `UNCONFIRMED` stamp). The distant future, untested hypotheses and contested numbers are speculative.
    - **No absolutes for open questions.** Prefer "can", "some", "about" to "always", "all", "exactly". Round numbers honestly and say they are rough.
    - Re-check the hook and the payoff twist hardest: they are the most quoted lines.
-6. **Board shape.** Ask the user which board they want, unless they already said:
-   - `tall` (4:5, **default**): the board fills most of the frame and visuals are big. Best for most topics.
-   - `classic` (16:9): a small board with lots of desk around it. Moodier, but visuals are smaller.
-   - `full`: the board is the whole frame and the title and captions float on top. Most immersive. Keep key content clear of the title area at the top and the captions at the bottom.
+6. **Format and board shape.** Ask the user both, in one question, unless they already said:
+   - **Format** (the video's size), set with `FORMAT`:
+     - `9:16` → 1080x1920 for TikTok, Reels and Shorts (**default**).
+     - `16:9` → 1920x1080 for YouTube, slides and websites.
+   - **Board shape** (the cork board inside the frame), set with `BOARD_SHAPE`:
+     - `tall` (4:5): the board fills most of a vertical frame and visuals are big. **Default for 9:16.** In 16:9 it is a narrow column, only for tall subjects.
+     - `classic` (16:9): a wide board. **Default for 16:9.** In 9:16 it is a small board with lots of desk around it: moodier, but visuals are smaller.
+     - `full`: the board is the whole frame and the title and captions float on top. Most immersive.
 
-   Set it with `BOARD_SHAPE` in the page. Whatever the shape, use `layout: 'full'` for the hook, the payoff and one or two big moments.
+   Whatever the shape, use `layout: 'full'` for the hook, the payoff and one or two big moments. Board units stay the same in both formats (classic 720x405, tall 720x900); only `full` changes (720x1280 vertical, 1280x720 horizontal), so always lay out with `B.W`, `B.H` and `B.safe`.
 7. **Self-check** with the checklist at the end of `references/story.md` before you build the storyboard. Send the brief and the plan table together with the storyboard sheet.
 
 ### Narrator voice
@@ -162,11 +166,11 @@ Then process what arrives:
    - Use `later()`, never `setTimeout`.
    - New sounds use `now()` and `sfxBus`.
    - Anything else won't appear in the MP4.
-4. **Platform safe zones.** `B.safe` gives the keep-clear zones in board units for the current shape: keep key text out of the lower-right corner (`x > B.safe.x` and `y > B.safe.y`), where TikTok/Reels buttons sit. In `full` scenes, also keep it above the captions (`y < B.safe.cap`) and, when the title shows, below it (`y > B.safe.top`). Keep captions where the engine puts them.
+4. **Platform safe zones.** In 9:16, TikTok, Reels and Shorts cover the top ~15% (tabs), the bottom ~25% (account name, description) and the right edge from ~55% down (buttons). The engine keeps the title and captions clear of them. `B.safe` gives the clear area for scene content in board units: put key text between `B.safe.top` and `B.safe.cap` (below the title or the tabs, above the captions), and out of the corner `x > B.safe.x && y > B.safe.y`. In 16:9 only the bottom edge (player bar) is reserved. `check.js lint` flags any covered text. Keep captions where the engine puts them.
 
 ## Phase 5. QA
 - `node kit/check.js page.html node_modules/@fontsource qa poster '#sceneN'` for every scene. Fix overlaps, clipped text, pins on letters and anything in the safe zone.
-- `node kit/check.js page.html node_modules/@fontsource qa lint`: every scene must pass (text ≥ 18 px, hero big enough, nothing under the platform buttons, every cue word found in the narration).
+- `node kit/check.js page.html node_modules/@fontsource qa lint`: every scene must pass (text ≥ 18 units, hero big enough, no text under platform UI, the title or the captions, every cue word found in the narration, nothing visible before its cue).
 - `node kit/check.js page.html node_modules/@fontsource qa play`: the run must reach the end card with no `PAGEERR`.
 - Watch the first 3 seconds of the preview on its own: is the question on screen and the hero visual visible before the first second ends? If not, fix scene 1 first.
 - Export a 6–10 s preview (`--preview 8`) and inspect a frame strip around every hero effect (`ffmpeg -ss … -vf "fps=6,scale=360:-1,tile=6x3"`).
@@ -184,7 +188,7 @@ python3 kit/build.py page.src.html stickers.js page.html --voice exp/voice
 node kit/export.js page.html node_modules/@fontsource exp out/<slug>.mp4 --models tts --pron pron.json --reuse-voice
 ```
 4. Verify:
-   - `ffprobe` shows 1080x1920, 30 fps, h264 + aac.
+   - `ffprobe` shows 1080x1920 (9:16) or 1920x1080 (16:9), 30 fps, h264 + aac.
    - A 1-fps frame strip of the whole video looks right.
    - `ffmpeg -af ebur128` gives about −14 LUFS.
    - The `.srt` exists.

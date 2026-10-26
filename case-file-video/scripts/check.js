@@ -2,11 +2,12 @@
 // Usage: node check.js <page.html> <fontsource_dir> <out_dir> poster [#sceneN]   -> out_dir/poster.png
 //        node check.js <page.html> <fontsource_dir> <out_dir> play               -> a frame every 2.9s until the end card
 //        node check.js <page.html> <fontsource_dir> <out_dir> record [seconds]   -> out_dir/*.webm (inspect with ffmpeg tiles)
-//        node check.js <page.html> <fontsource_dir> <out_dir> lint               -> phone legibility report for every scene:
-//          smallest text on the board (stage px on the 720-wide frame; warn under 18), the hero visual's size (the elements
-//          marked with B.hero(...), measured as one group; else the biggest single piece): warn when it covers under 10% of
-//          the frame AND spans under 75% of its width, text inside the platform-button corner (stage x > 620, y > 697),
-//          B.cue words that don't match any narration word, and pieces that are visible before their cue
+//        node check.js <page.html> <fontsource_dir> <out_dir> lint               -> legibility report for every scene:
+//          smallest text on the board (stage units; warn under 18), the hero visual's size (the elements marked with
+//          B.hero(...), measured as one group; else the biggest single piece): warn when it covers under 10% of the frame
+//          AND spans under 75% of its width; text that platform UI, the title strip or the captions would cover (9:16:
+//          top 15% tabs, bottom 25% description, right-edge buttons); B.cue words that don't match any narration word;
+//          and pieces that are visible before their cue
 // fontsource_dir = node_modules/@fontsource after: npm i @fontsource/anton @fontsource/special-elite @fontsource/courier-prime @fontsource/old-standard-tt
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
@@ -37,7 +38,8 @@ const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Sp
       await p.goto('http://local/page#scene' + i); await p.reload(); await p.waitForTimeout(1200);
       const r = await p.evaluate(() => {
         const miss = (window.__cueMiss || []).map(m => m.key), early = window.__preVisible || [];
-        const st = document.querySelector('#stage').getBoundingClientRect(), k = 720 / st.width;
+        const N = window.__layoutNow, SW = N.SW, SH = N.SH, Z = N.SAFE, L = N.L;
+        const st = document.querySelector('#stage').getBoundingClientRect(), k = SW / st.width;
         const layer = [...document.querySelectorAll('#board .layer')].pop();
         const toStage = rc => ({ x: (rc.left - st.left) * k, y: (rc.top - st.top) * k, w: rc.width * k, h: rc.height * k });
         const vis = e => { for (let x = e; x && x !== layer; x = x.parentElement) { const cs = getComputedStyle(x); if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) return false; } return true; };
@@ -50,33 +52,39 @@ const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Sp
           const rot = Math.abs(Math.cos(((parseFloat(getComputedStyle(e.closest('[style*=rotate]') || e).getPropertyValue('--r')) || 0) * Math.PI) / 180)) || 1;
           const px = parseFloat(getComputedStyle(e).fontSize) * Math.min(sc * rot, sc) * k;
           texts.push({ px: +px.toFixed(1), t: own.slice(0, 28) });
-          const b = toStage(rc); if (b.x + b.w > 620 && b.y + b.h > 697 && b.y < 1280) corner.push(own.slice(0, 20));
+          const b = toStage(rc), tag = own.slice(0, 20), hit = [];
+          if (b.x + b.w > Z.railX && b.y + b.h > Z.railY) hit.push('platform buttons');
+          if (b.y < Z.top) hit.push('platform tabs (top)');
+          if (b.y + b.h > Z.bottom) hit.push('platform description (bottom)');
+          if (N.head && b.y < L.head + 100) hit.push('the title strip');
+          if (b.y + b.h > L.cap && b.y < L.cap + 92) hit.push('the captions');
+          if (hit.length) corner.push(`"${tag}" under ${hit.join(' + ')}`);
         });
         texts.sort((a, b) => a.px - b.px);
         let hero = { a: 0, what: '' };
         const marked = [...layer.querySelectorAll('[data-hero]')].filter(vis);
         if (marked.length) {
           const bs = marked.map(e => toStage(e.getBoundingClientRect())), x0 = Math.max(0, Math.min(...bs.map(b => b.x))), y0 = Math.max(0, Math.min(...bs.map(b => b.y)));
-          const x1 = Math.min(720, Math.max(...bs.map(b => b.x + b.w))), y1 = Math.min(1280, Math.max(...bs.map(b => b.y + b.h)));
-          return { miss, early, min: texts.slice(0, 2), hero: { pct: +((x1 - x0) * (y1 - y0) / (720 * 1280) * 100).toFixed(1), wpct: Math.round((x1 - x0) / 7.2), what: `hero (${marked.length} piece${marked.length > 1 ? 's' : ''})` }, corner };
+          const x1 = Math.min(SW, Math.max(...bs.map(b => b.x + b.w))), y1 = Math.min(SH, Math.max(...bs.map(b => b.y + b.h)));
+          return { miss, early, min: texts.slice(0, 2), hero: { pct: +((x1 - x0) * (y1 - y0) / (SW * SH) * 100).toFixed(1), wpct: Math.round((x1 - x0) / SW * 100), what: `hero (${marked.length} piece${marked.length > 1 ? 's' : ''})` }, corner };
         }
         layer.querySelectorAll('img, .chip, .yellow, .card, .q, .ph, .stamp, .news').forEach(e => {
           if (!vis(e) || (e.classList.contains('news'))) return;
-          const b = toStage(e.getBoundingClientRect()), a = Math.max(0, Math.min(720, b.x + b.w) - Math.max(0, b.x)) * Math.max(0, Math.min(1280, b.y + b.h) - Math.max(0, b.y));
-          if (a > hero.a) hero = { a, w: Math.min(720, b.x + b.w) - Math.max(0, b.x), what: e.tagName === 'IMG' ? 'cutout' : (e.className.split(' ').find(c => ['chip', 'yellow', 'card', 'q', 'ph', 'stamp'].includes(c)) || e.className) + (e.textContent ? ' "' + e.textContent.trim().slice(0, 18) + '"' : '') };
+          const b = toStage(e.getBoundingClientRect()), a = Math.max(0, Math.min(SW, b.x + b.w) - Math.max(0, b.x)) * Math.max(0, Math.min(SH, b.y + b.h) - Math.max(0, b.y));
+          if (a > hero.a) hero = { a, w: Math.min(SW, b.x + b.w) - Math.max(0, b.x), what: e.tagName === 'IMG' ? 'cutout' : (e.className.split(' ').find(c => ['chip', 'yellow', 'card', 'q', 'ph', 'stamp'].includes(c)) || e.className) + (e.textContent ? ' "' + e.textContent.trim().slice(0, 18) + '"' : '') };
         });
-        return { miss, early, min: texts.slice(0, 2), hero: { pct: +(hero.a / (720 * 1280) * 100).toFixed(1), wpct: Math.round((hero.w || 0) / 7.2), what: 'unmarked, biggest piece: ' + hero.what }, corner };
+        return { miss, early, min: texts.slice(0, 2), hero: { pct: +(hero.a / (SW * SH) * 100).toFixed(1), wpct: Math.round((hero.w || 0) / SW * 100), what: 'unmarked, biggest piece: ' + hero.what }, corner };
       });
       const w = [];
       if (r.min[0] && r.min[0].px < 18) w.push(`small text ${r.min[0].px}px "${r.min[0].t}"`);
       if (r.hero.pct < 10 && r.hero.wpct < 75) w.push(`hero visual too small: ${r.hero.pct}% of the frame, ${r.hero.wpct}% of its width`);
-      if (r.corner.length) w.push(`text under the platform buttons: ${r.corner.join(' | ')}`);
+      if (r.corner.length) w.push(`covered text: ${r.corner.join(' | ')}`);
       if (r.early.length) w.push(`visible before its cue (inline opacity?): ${r.early.join(' | ')}`);
       if (r.miss.length) w.push(`cue word(s) not found in the narration (they fire too early): ${r.miss.join(', ')}`);
       warns += w.length;
       console.log(`scene ${i}: smallest text ${r.min[0] ? r.min[0].px + 'px "' + r.min[0].t + '"' : '-'} · ${r.hero.what} ${r.hero.pct}% of frame, ${r.hero.wpct}% wide${w.length ? '\n   WARN ' + w.join('\n   WARN ') : ' · ok'}`);
     }
-    console.log(warns ? `${warns} warning(s): enlarge small notes (or cut them), make each scene's hero visual bigger, move text out of the button corner` : 'all scenes pass');
+    console.log(warns ? `${warns} warning(s): enlarge small notes (or cut them), make each scene's hero visual bigger, move covered text into the clear area (B.safe)` : 'all scenes pass');
   }
   else if (mode === 'play') {
     await p.click('#startBtn'); const stage = await p.$('#stage');

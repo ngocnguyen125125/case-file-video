@@ -5,7 +5,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Courier+Prime:wght@400;700&family=Old+Standard+TT:wght@400;700&family=Special+Elite&display=swap">
 <style>
-/* Layout: one 9:16 "film" stage (720x1280 design units) scaled to fit, with a slim control deck under it.
+/* Layout: one "film" stage scaled to fit, with a slim control deck under it. FORMAT (in the script) picks
+   9:16 (720x1280 design units, exported 1080x1920) or 16:9 (1280x720 units, exported 1920x1080).
    Single committed look: a noir detective's desk at night. */
 :root{
   --desk:#140f0b;        /* desk in shadow */
@@ -119,7 +120,7 @@ svg.marks path{fill:none;stroke:#c22a20;stroke-width:4.5;stroke-linecap:round;st
 .hl{position:absolute;background:rgba(255,212,0,.55);mix-blend-mode:multiply;z-index:65;border-radius:3px 7px 4px 8px}
 .ph{border:3px dashed var(--evidence);background:repeating-linear-gradient(45deg,rgba(179,35,29,.08) 0 10px,rgba(255,255,255,.35) 10px 20px),#efe7d3;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--f-type);color:var(--evidence);font-size:13px;line-height:1.3;padding:8px}
 .ph b{display:block;font-family:var(--f-display);font-weight:400;font-size:16px;letter-spacing:1px}
-#filmfx{position:absolute;left:0;top:0;width:720px;height:1280px;pointer-events:none;z-index:150;mix-blend-mode:overlay}
+#filmfx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:150;mix-blend-mode:overlay}
 svg.strings path{stroke:var(--evidence);stroke-width:2.3;fill:none;filter:url(#ss)}
 .censor{position:absolute;background:#0b0b0b;z-index:23}
 .cut{position:absolute;border-left:2.5px dashed var(--evidence);z-index:12}
@@ -187,7 +188,9 @@ svg.strings path{stroke:var(--evidence);stroke-width:2.3;fill:none;filter:url(#s
 .ctl select{max-width:210px}
 .ctl .status{color:var(--ui-dim);font-size:12px;min-width:0;text-align:center;flex-basis:100%}
 html.exporting body{padding:0!important}html.exporting .ctl{display:none}html.exporting .app{padding:0;justify-content:flex-start;align-items:flex-start}
-html.exporting .stage{border-radius:0;box-shadow:none}html.exporting .overlay{display:none!important}
+html.exporting .stage{border-radius:0;box-shadow:none}
+.stage.f-wide .overlay{padding-bottom:56px;gap:12px}.stage.f-wide .big-btn{font-size:34px}
+.stage.f-wide .caption{left:120px;right:120px}html.exporting .overlay{display:none!important}
 @media (prefers-reduced-motion:reduce){.blinds{animation:none}.cam{animation:none}.boil{animation:none}.in.a-slam,.layer.enter,.layer.out{animation-name:fade}}
 </style>
 
@@ -239,14 +242,22 @@ const EXP = window.__EXPORT__ || null;
 if (EXP) { EXP.t = 0; EXP.timers = []; EXP.sfxLog = []; EXP.speech = []; EXP.done = false; document.documentElement.classList.add('exporting'); }
 const later = (fn, ms) => EXP ? EXP.timers.push({ at: EXP.t + ms / 1000, fn }) : setTimeout(fn, ms);
 
+/* ---------- output format ---------- */
+// TOPIC: '9:16' = vertical 1080x1920 (TikTok, Reels, Shorts) or '16:9' = horizontal 1920x1080 (YouTube, slides, websites)
+const FORMAT = '9:16';
+const WIDE = FORMAT === '16:9', SW = WIDE ? 1280 : 720, SH = WIDE ? 720 : 1280;   // stage size in design units
+Object.assign(stage.style, { width: SW + 'px', height: SH + 'px' }); stage.classList.toggle('f-wide', WIDE);
+$('#dust').width = SW; $('#dust').height = SH;
+document.querySelector('.handle').style.top = (WIDE ? 690 : 1190) + 'px';
+
 /* ---------- fit stage ---------- */
 function fit() {
-  if (EXP) { stage.style.transform = 'none'; wrap.style.width = '720px'; wrap.style.height = '1280px'; return; }
+  if (EXP) { stage.style.transform = 'none'; wrap.style.width = SW + 'px'; wrap.style.height = SH + 'px'; return; }
   const ctlH = $('#ctl').offsetHeight + 30;
   const aw = document.documentElement.clientWidth - 32, ah = window.innerHeight - ctlH;
-  const s = Math.max(0.2, Math.min(aw / 720, ah / 1280));
+  const s = Math.max(0.2, Math.min(aw / SW, ah / SH));
   stage.style.transform = `scale(${s})`;
-  wrap.style.width = 720 * s + 'px'; wrap.style.height = 1280 * s + 'px';
+  wrap.style.width = SW * s + 'px'; wrap.style.height = SH * s + 'px';
 }
 addEventListener('resize', fit);
 
@@ -257,7 +268,7 @@ function noise(g, w, h, amt, alpha) {
   for (let i = 0; i < d.length; i += 4) { const n = (rnd() - .5) * amt; d[i] += n; d[i + 1] += n; d[i + 2] += n; d[i + 3] = 255; }
   g.putImageData(id, 0, 0);
 }
-const deskTex = canvasTex(720, 1280, (g, w, h) => {
+const deskTex = canvasTex(SW, SH, (g, w, h) => {
   g.fillStyle = '#1a130d'; g.fillRect(0, 0, w, h);
   for (let i = 0; i < 520; i++) {               // long wood grain lines
     const y0 = R(-40, h + 40), amp = R(2, 14), fr = R(.002, .012), ph = R(0, 6);
@@ -265,17 +276,17 @@ const deskTex = canvasTex(720, 1280, (g, w, h) => {
     g.beginPath(); for (let x = -10; x <= w + 10; x += 12) { const y = y0 + Math.sin(x * fr + ph) * amp + x * .05; x === -10 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke();
   }
   noise(g, w, h, 14);
-  const lg = g.createRadialGradient(400, 560, 40, 400, 600, 760);
+  const lg = g.createRadialGradient(w * .555, h * .44, 40, w * .555, h * .47, Math.max(w, h) * .6);
   lg.addColorStop(0, 'rgba(255,196,120,.30)'); lg.addColorStop(.45, 'rgba(160,100,50,.10)'); lg.addColorStop(1, 'rgba(0,0,0,.55)');
   g.fillStyle = lg; g.fillRect(0, 0, w, h);
 });
-$('#desk').style.backgroundImage = `url(${deskTex})`;
-const corkTex = canvasTex(720, 1280, (g, w, h) => {
+$('#desk').style.backgroundImage = `url(${deskTex})`; $('#desk').style.backgroundSize = `${SW}px ${SH}px`;
+const corkTex = canvasTex(SW, SH, (g, w, h) => {      // covers the biggest board of either format
   g.fillStyle = '#a7774a'; g.fillRect(0, 0, w, h);
   for (let i = 0; i < 28000; i++) { const s = R(.6, 3.2); g.fillStyle = rnd() < .55 ? `rgba(70,40,18,${R(.15, .55)})` : `rgba(230,190,140,${R(.1, .4)})`; g.beginPath(); g.ellipse(R(0, w), R(0, h), s, s * R(.5, 1), R(0, 3), 0, 7); g.fill(); }
   noise(g, w, h, 18);
 });
-board.style.backgroundImage = `url(${corkTex})`;
+board.style.backgroundImage = `url(${corkTex})`; board.style.backgroundSize = `${SW}px ${SH}px`;
 const paperTex = canvasTex(256, 256, (g, w, h) => {
   g.fillStyle = '#ededed'; g.fillRect(0, 0, w, h); noise(g, w, h, 22);
   for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(90,70,40,${R(.03, .09)})`; g.lineWidth = R(.3, 1); g.beginPath(); const x = R(0, w), y = R(0, h); g.moveTo(x, y); g.lineTo(x + R(-20, 20), y + R(-6, 6)); g.stroke(); }
@@ -297,12 +308,12 @@ const grungeURL = (() => { const c = document.createElement('canvas'); c.width =
 
 /* dust motes in the lamp beam */
 const dctx = $('#dust').getContext('2d');
-const motes = Array.from({ length: 46 }, () => ({ x: R(80, 700), y: R(80, 1200), r: R(.6, 2.2), vx: R(-.08, .08), vy: R(-.12, .03), a: R(.15, .5) }));
+const motes = Array.from({ length: 46 }, () => ({ x: R(80, SW - 20), y: R(80, SH - 80), r: R(.6, 2.2), vx: R(-.08, .08), vy: R(-.12, .03), a: R(.15, .5) }));
 let dustOn = !reduced;
 function drawDust() {
-  dctx.clearRect(0, 0, 720, 1280);
+  dctx.clearRect(0, 0, SW, SH);
   for (const m of motes) {
-    if (dustOn && !(playing && paused)) { m.x += m.vx; m.y += m.vy; if (m.y < 40) m.y = 1240; if (m.x < 20) m.x = 700; if (m.x > 710) m.x = 30; }
+    if (dustOn && !(playing && paused)) { m.x += m.vx; m.y += m.vy; if (m.y < 40) m.y = SH - 40; if (m.x < 20) m.x = SW - 20; if (m.x > SW - 10) m.x = 30; }
     dctx.fillStyle = `rgba(255,220,170,${m.a})`; dctx.beginPath(); dctx.arc(m.x, m.y, m.r, 0, 7); dctx.fill();
   }
 }
@@ -314,7 +325,7 @@ let sceneHooks = [];            // per scene: fn(sceneClock, dt) while playing; 
 /* ---------- film look: grain, exposure flicker, scratches, dust, gate weave ---------- */
 const LOOK = { grain: .5, flicker: .35, scratches: .5, weave: .5 };   // TOPIC: 0 turns an effect off, 1 is strong
 (() => {
-  const c = document.createElement('canvas'); c.id = 'filmfx'; c.width = 360; c.height = 640; stage.appendChild(c);
+  const c = document.createElement('canvas'); c.id = 'filmfx'; c.width = SW / 2; c.height = SH / 2; stage.appendChild(c); const CW = c.width, CH = c.height;
   const g = c.getContext('2d'), tiles = [];
   for (let k = 0; k < 4; k++) { const t = document.createElement('canvas'); t.width = t.height = 128; const tg = t.getContext('2d'), id = tg.createImageData(128, 128);
     for (let i = 0; i < id.data.length; i += 4) { const v = Math.random() * 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; } tg.putImageData(id, 0, 0); tiles.push(t); }
@@ -322,13 +333,13 @@ const LOOK = { grain: .5, flicker: .35, scratches: .5, weave: .5 };   // TOPIC: 
   frameHooks.push(dt => {
     if (reduced || (playing && paused)) return;
     acc += dt; if (acc < 1 / 15) return; acc = 0; frame++;      // film artefacts update at ~15 fps
-    g.clearRect(0, 0, 360, 640);
-    if (LOOK.grain) { g.globalAlpha = .1 + .25 * LOOK.grain; const t = tiles[frame % 4], ox = -Math.random() * 128, oy = -Math.random() * 128; for (let x = ox; x < 360; x += 128) for (let y = oy; y < 640; y += 128) g.drawImage(t, x, y); }
-    if (LOOK.flicker) { const v = 128 + (Math.random() - .5) * 60 * LOOK.flicker; g.globalAlpha = .5; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(0, 0, 360, 640); }
+    g.clearRect(0, 0, CW, CH);
+    if (LOOK.grain) { g.globalAlpha = .1 + .25 * LOOK.grain; const t = tiles[frame % 4], ox = -Math.random() * 128, oy = -Math.random() * 128; for (let x = ox; x < CW; x += 128) for (let y = oy; y < CH; y += 128) g.drawImage(t, x, y); }
+    if (LOOK.flicker) { const v = 128 + (Math.random() - .5) * 60 * LOOK.flicker; g.globalAlpha = .5; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(0, 0, CW, CH); }
     if (LOOK.scratches) {
-      if (!scratch && Math.random() < .05 * LOOK.scratches) scratch = { x: R(20, 340), life: 2 + Math.floor(Math.random() * 4) };
-      if (scratch) { g.globalAlpha = .55; g.fillStyle = '#e8e8e8'; g.fillRect(scratch.x + R(-1, 1), 0, 1, 640); if (--scratch.life <= 0) scratch = null; }
-      if (Math.random() < .25 * LOOK.scratches) { g.globalAlpha = .6; g.fillStyle = Math.random() < .5 ? '#111' : '#eee'; g.beginPath(); g.arc(R(0, 360), R(0, 640), R(.5, 2), 0, 7); g.fill(); }
+      if (!scratch && Math.random() < .05 * LOOK.scratches) scratch = { x: R(20, CW - 20), life: 2 + Math.floor(Math.random() * 4) };
+      if (scratch) { g.globalAlpha = .55; g.fillStyle = '#e8e8e8'; g.fillRect(scratch.x + R(-1, 1), 0, 1, CH); if (--scratch.life <= 0) scratch = null; }
+      if (Math.random() < .25 * LOOK.scratches) { g.globalAlpha = .6; g.fillStyle = Math.random() < .5 ? '#111' : '#eee'; g.beginPath(); g.arc(R(0, CW), R(0, CH), R(.5, 2), 0, 7); g.fill(); }
     }
     g.globalAlpha = 1;
     if (LOOK.weave) board.style.translate = `${(R(-.6, .6) * LOOK.weave).toFixed(2)}px ${(R(-.6, .6) * LOOK.weave).toFixed(2)}px`;
@@ -339,15 +350,25 @@ const LOOK = { grain: .5, flicker: .35, scratches: .5, weave: .5 };   // TOPIC: 
 // TOPIC: the board shape for this video. 'classic' = 16:9 board in the middle of the frame, 'tall' = 4:5 board (more room,
 // bigger visuals on phones), 'full' = the board fills the whole frame (title and captions float on top).
 // Any scene can override it with  layout: 'full'  (e.g. the cold-open hook or a dramatic full-screen moment), and hide the
-// kicker/title with  head: false. Scene code always works in board units: B.W x B.H (classic 720x405, tall 720x900, full 720x1280).
+// kicker/title with  head: false. Scene code always works in board units: B.W x B.H
+// (9:16 and 16:9 alike: classic 720x405, tall 720x900; full = the whole frame, 720x1280 vertical or 1280x720 horizontal).
 const BOARD_SHAPE = 'tall';
-const LAYOUTS = {
+const LAYOUTS = WIDE ? {
+  classic: { w: 720, h: 405, x: 190, y: 104, s: 1.25, head: 10, cap: 628 },
+  tall: { w: 720, h: 900, x: 439, y: 104, s: .5611, head: 10, cap: 628 },
+  full: { w: 1280, h: 720, x: 0, y: 0, s: 1, head: 18, cap: 612 },
+} : {
   classic: { w: 720, h: 405, x: 0, y: 437, s: 1, head: 268, cap: 880 },
-  tall: { w: 720, h: 900, x: 42, y: 170, s: .8833, head: 46, cap: 986 },
-  full: { w: 720, h: 1280, x: 0, y: 0, s: 1, head: 70, cap: 952 },
+  tall: { w: 720, h: 900, x: 65, y: 222, s: .82, head: 118, cap: 868 },
+  full: { w: 720, h: 1280, x: 0, y: 0, s: 1, head: 118, cap: 868 },
 };
-// keep-clear zones in board units: platform buttons (TikTok/Reels) cover stage x > 620, y > 697; captions start at stage L.cap
-const safeFor = L => ({ x: Math.round((620 - L.x) / L.s), y: Math.round((697 - L.y) / L.s), cap: Math.round((L.cap - 12 - L.y) / L.s), top: Math.max(0, Math.round((L.head + 110 - L.y) / L.s)) });
+// platform UI, in stage units. 9:16: TikTok/Reels/Shorts tabs cover the top ~15%, account name + description the bottom ~25%,
+// and the like/comment/share buttons the right edge from ~55% down. 16:9: only the player's progress bar at the very bottom.
+const SAFE = WIDE ? { top: 0, bottom: 690, railX: SW, railY: SH } : { top: 192, bottom: 960, railX: 620, railY: 697 };
+// keep-clear zones in board units for a layout: key text belongs between top and cap, and out of the corner x > safe.x && y > safe.y
+const safeFor = (L, head = true) => { const u = v => Math.round((v - L.y) / L.s);
+  return { x: Math.round((SAFE.railX - L.x) / L.s), y: u(SAFE.railY), top: Math.max(0, u(head ? Math.max(SAFE.top, L.head + 110) : SAFE.top)),
+    cap: Math.min(L.h, u(Math.min(L.cap - 12, SAFE.bottom))) }; };
 let curShape = null;
 function applyLayout(name, animate) {
   const L = LAYOUTS[name] || LAYOUTS.classic, prev = curShape && LAYOUTS[curShape];
@@ -401,14 +422,14 @@ const WORDS = 'the of machine reading words language model text pieces bureau re
 function para(n) { const s = []; for (let i = 0; i < n; i++) s.push(WORDS[Math.floor(rnd() * WORDS.length)]); s[0] = s[0][0].toUpperCase() + s[0].slice(1); return s.join(' ') + '.'; }
 const HEADS = ['Machines Learn To Read', 'The Word Puzzle', 'Bureau Of Language', 'New Electronic Brain', 'Signals Decoded', 'Text Into Numbers', 'Counting The Pieces'];
 
-function Builder(layer, L = LAYOUTS.classic) {
+function Builder(layer, L = LAYOUTS.classic, head = true) {
   const zoom = mk('<div class="zoom"></div>', layer);   // punch-in zooms animate this wrapper
   const cam = mk('<div class="cam"></div>', zoom);      // slow Ken Burns drift animates this one
   const cues = [];
   let strings = null, marks = null;
   const B = {
     cam, zoom, cues,
-    W: L.w, H: L.h, safe: safeFor(L),      // board size in units + keep-clear zones (see BOARD_SHAPE)
+    W: L.w, H: L.h, safe: safeFor(L, head),      // board size in units + keep-clear zones (see BOARD_SHAPE)
     el(html, anim = 'drop', sfx = 'paper') { const e = mk(html, cam); e.classList.add('pre', 'a-' + anim); e.dataset.sfx = anim === 'slide' && sfx === 'paper' ? 'slide' : sfx; return e; },
     // every sliding item enters from the board edge nearest to it, like the reference video
     aimSlides() {
@@ -537,14 +558,14 @@ const SCENES = [
    say: "What does an A.I. actually read when you talk to it? Not words.",
    build(B) {
      const bg = [B.fill('background:radial-gradient(ellipse at 50% 52%,#3a2716 0,#120d09 72%)'), B.news(-40, 860, 300, 300, -7), B.news(470, 900, 300, 280, 6)];
-     const robot = B.sticker('robot', 196, 310, 690, -1.5, 20); robot.classList.replace('a-slide', 'a-base');
-     const q = B.question('What does an AI actually read?', { y: 96, size: 66 });
-     const chip = B.piece({ x: 410, y: 520, cls: 'chip', html: 'WORDS', rot: 7, z: 40, shadow: 'shadow-lg', anim: 'drop', style: 'font-size:60px;background-color:#ece5d3' });
-     const cross = B.marker('cross', { x: 418, y: 528, w: 214, h: 64 }, { width: 8 });
-     const file = B.stamp('Case file #001', 40, 820, 40, -8, { paper: true });
+     const robot = B.sticker('robot', 200, 390, 680, -1.5, 20); robot.classList.replace('a-slide', 'a-base');
+     const q = B.question('What does an AI actually read?', { y: B.safe.top + 8, size: 66 });
+     const chip = B.piece({ x: 396, y: 566, cls: 'chip', html: 'WORDS', rot: 7, z: 40, shadow: 'shadow-lg', anim: 'drop', style: 'font-size:60px;background-color:#ece5d3' });
+     const cross = B.marker('cross', { x: 404, y: 574, w: 214, h: 64 }, { width: 8 });
+     const file = B.stamp('Case file #001', 40, 762, 40, -8, { paper: true });
      B.hero(robot, q.el);
      B.cue('@0', [...bg, robot, ...q.words], { stagger: .06 });
-     B.cue('actually', [B.punch(360, 440, 1.12, 1.4)]);
+     B.cue('actually', [B.punch(360, 520, 1.12, 1.4)]);
      B.cue('talk', [chip]);
      B.cue('Not', [cross]);
      B.cue('words.', [file]);
@@ -557,20 +578,20 @@ const SCENES = [
        B.piece({ x: 20, y: 24, w: 400, h: 600, rot: -1.5, cls: 'manila', tornJ: 3 })];
      const chart = B.piece({ x: 44, y: 46, w: 352, h: 556, rot: -1.5, tornJ: 2, z: 2, anim: 'base',
        style: 'position:relative;background:#e6dfcd;background-image:repeating-linear-gradient(#e6dfcd 0 35px,#6d675c 35px 37px)',
-       html: [6, 5, 4, 3, 2, 1].map((n, i) => `<div style="position:absolute;left:8px;top:${i * 92 + 8}px;font:21px var(--f-mono);color:#555">${n}'0"</div>`).join('') });
-     const robot = B.sticker('robot', 100, 70, 520, -1.5, 20); robot.classList.replace('a-slide', 'a-base');
+       html: [6, 5, 4, 3, 2, 1].map((n, i) => `<div style="position:absolute;left:8px;top:${i * 92 + 8}px;font:23px var(--f-mono);color:#555">${n}'0"</div>`).join('') });
+     const robot = B.sticker('robot', 96, 60, 552, -1.5, 20); robot.classList.replace('a-slide', 'a-base');
      const torch = B.flashlight([[0, 600, 700], [.7, 520, 200], [1.4, 260, 520], [2.1, 235, 215], [2.6, 225, 195]], { r: 120 });
      const t1 = B.tape(30, 28, -30, 80), t2 = B.tape(372, 26, 25, 80);
-     const bar = B.el(`<div class="censor" style="left:160px;top:144px;width:99px;height:28px;--r:-1.5deg;transform:rotate(-1.5deg)"></div>`, 'wipe', 'none');
-     const subj = B.piece({ x: 50, y: 598, cls: 'strip', html: 'SUBJECT: LANGUAGE MODEL', rot: -2, z: 30, anim: 'wipe', sfx: 'type', style: 'font-size:24px;padding:5px 12px 3px' });
-     const card = B.piece({ x: 420, y: 236, w: 284, rot: 2.5, cls: 'card', z: 25, tornJ: 1.2, style: 'font-size:21px;line-height:34px;background-image:none;background-color:#f1ead6;padding:14px 16px',
+     const bar = B.el(`<div class="censor" style="left:160px;top:139px;width:105px;height:30px;--r:-1.5deg;transform:rotate(-1.5deg)"></div>`, 'wipe', 'none');
+     const subj = B.piece({ x: 50, y: 616, cls: 'strip', html: 'SUBJECT: LANGUAGE MODEL', rot: -2, z: 30, anim: 'wipe', sfx: 'type', style: 'font-size:24px;padding:5px 12px 3px' });
+     const card = B.piece({ x: 410, y: 236, w: 300, rot: 2.5, cls: 'card', z: 25, tornJ: 1.2, style: 'font-size:23px;line-height:36px;background-image:none;background-color:#f1ead6;padding:14px 16px',
        html: `<b style="font-family:var(--f-display);font-size:28px;letter-spacing:1px;font-weight:400">SUSPECT PROFILE</b><br>ALIAS: "the chatbot"<br>READS: billions of pages<br>SECRET: <span style="background:#111;color:#111">it chops text</span>` });
      const t3 = B.tape(520, 224, -4, 90);
      const p1 = B.pin(230, 196), p2 = B.pin(560, 262), p3 = B.pin(560, 560, true);
      const s1 = B.string(p1, p2, 22), s2 = B.string(p2, p3, 10);
      const cls = B.stamp('Classified', 440, 470, 46, -12);
-     const yl = B.piece({ x: 56, y: 690, cls: 'yellow', html: 'It chops your text', rot: -3, z: 40, style: 'font-size:48px' });
-     const ex = B.piece({ x: 96, y: 778, cls: 'strip', html: 'EXHIBIT 1 — THE PIECES: TOKENS', rot: -1, z: 41, anim: 'wipe', sfx: 'type', style: 'font-size:24px;padding:5px 12px 3px' });
+     const yl = B.piece({ x: 56, y: 676, cls: 'yellow', html: 'It chops your text', rot: -3, z: 40, style: 'font-size:48px' });
+     const ex = B.piece({ x: 420, y: 548, cls: 'strip', html: 'EXHIBIT 1: TOKENS', rot: -1, z: 41, anim: 'wipe', sfx: 'type', style: 'font-size:24px;padding:5px 12px 3px' });
      B.hero(robot);
      B.cue('@0', [torch.el, ...bg, chart, robot, t1, t2], { stagger: .05 });
      B.cue('chatbot', [torch.off, subj]);
@@ -620,8 +641,8 @@ const SCENES = [
        const a = B.pin(172, y + 40), b = B.pin(244, y + 40); pA.push(a); pB.push(b); strs.push(B.string(a, b, 6));
      });
      const receipt = B.piece({ x: 466, y: 14, w: 236, cls: 'card', rot: 1.5, z: 30, tornJ: 1, anim: 'print', sfx: 'printer',
-       style: 'font-family:var(--f-mono);font-size:21px;line-height:31px;background-image:none;background-color:#f6f2e8;padding:12px 14px 16px',
-       html: `<b style="font-family:var(--f-display);font-weight:400;font-size:24px;letter-spacing:1px">TOKEN RECEIPT</b><br>The ..... 464<br>cat .... 9059<br>sat ... 10139<br>on ...... 389<br>the ..... 290<br>mat .... 2450<br>——————<br>TOTAL&nbsp;&nbsp;6<br><span style="font-size:21px;color:#6b6252">IDs are examples</span>` });
+       style: 'font-family:var(--f-mono);font-size:23px;line-height:33px;background-image:none;background-color:#f6f2e8;padding:12px 12px 16px',
+       html: `<b style="font-family:var(--f-display);font-weight:400;font-size:24px;letter-spacing:1px">TOKEN RECEIPT</b><br>The ..... 464<br>cat .... 9059<br>sat ... 10139<br>on ...... 389<br>the ..... 290<br>mat .... 2450<br>——————<br>TOTAL&nbsp;&nbsp;6<br><span style="font-size:23px;color:#6b6252">IDs are examples</span>` });
      const list = B.piece({ x: 30, y: 470, cls: 'strip', html: '[464, 9059, 10139, 389, 290, 2450]', rot: -1.5, z: 30, anim: 'wipe', sfx: 'type', style: 'font-size:23px;padding:7px 12px 5px' });
      const hl = B.highlight(40, 480, 500, 30, -1.5);
      const dec = B.stamp('Decoded', 44, 404, 36, -8);
@@ -640,24 +661,23 @@ const SCENES = [
    say: "So that explains a famous puzzle. Ask some A.I.s how many R's are in strawberry, and they can slip. Why? They see chunks, not letters.",
    build(B) {
      const bg = [B.fill('background:radial-gradient(circle at 40% 40%,#3d130f 0,#130706 74%)'), B.news(-30, 1000, 280, 260, -5), B.news(480, 1010, 280, 260, 5)];
-     const berry = B.sticker('strawberry', 40, 196, 470, -6, 20); berry.classList.replace('a-slide', 'a-base');
-     const ex = B.piece({ x: 44, y: 640, cls: 'strip', html: 'EXHIBIT C — ONE STRAWBERRY', rot: -2, z: 30, anim: 'wipe', sfx: 'type', style: 'font-size:24px;padding:5px 12px 3px' });
-     const q = B.piece({ x: 410, y: 206, w: 292, cls: 'card', rot: 2, z: 25, tornJ: 1, style: 'font-size:23px;line-height:34px;background-image:none;background-color:#f1ead6;padding:14px 16px',
+     const berry = B.sticker('strawberry', 30, 236, 430, -6, 20); berry.classList.replace('a-slide', 'a-base');
+     const q = B.piece({ x: 400, y: 240, w: 296, cls: 'card', rot: 2, z: 25, tornJ: 1, style: 'font-size:23px;line-height:34px;background-image:none;background-color:#f1ead6;padding:14px 16px',
        html: `Q: How many <b style="color:var(--evidence)">R</b>'s<br>in "strawberry"?<br>AI: 2 ...<br>REAL ANSWER: 3` });
-     const xout = B.marker('cross', { x: 452, y: 290, w: 22, h: 28 }, { width: 5 });
-     const wrong = B.stamp('Wrong', 520, 410, 44, -14, { paper: true });   // paper-backed: a plain stamp vanishes on a dark backdrop
-     const mag = B.sticker('magnifier', 286, 330, 230, 12, 24);
-     const sees = B.piece({ x: 56, y: 704, cls: 'strip', html: 'WHAT THE AI ACTUALLY SEES:', rot: -1, z: 31, anim: 'wipe', sfx: 'type', style: 'font-size:24px;padding:5px 12px 3px' });
-     const k1 = B.piece({ x: 60, y: 748, cls: 'chip', html: 'straw', rot: -2, z: 32, shadow: 'shadow-lg', style: 'font-size:72px;background-color:#ece5d3' });
-     const k2 = B.piece({ x: 344, y: 740, cls: 'chip', html: 'berry', rot: 2, z: 33, shadow: 'shadow-lg', style: 'font-size:72px;background-color:#ece5d3' });
-     const a = B.pin(80, 752), b = B.pin(364, 744), s = B.pin(180, 300);
+     const xout = B.marker('cross', { x: 444, y: 324, w: 22, h: 28 }, { width: 5 });
+     const wrong = B.stamp('Wrong', 520, 420, 44, -14, { paper: true });   // paper-backed: a plain stamp vanishes on a dark backdrop
+     const mag = B.sticker('magnifier', 270, 360, 200, 12, 24);
+     const sees = B.piece({ x: 50, y: 716, cls: 'strip', html: 'WHAT THE AI ACTUALLY SEES:', rot: -1, z: 31, anim: 'wipe', sfx: 'type', style: 'font-size:24px;padding:5px 12px 3px' });
+     const k1 = B.piece({ x: 50, y: 752, cls: 'chip', html: 'straw', rot: -2, z: 32, shadow: 'shadow-lg', style: 'font-size:64px;background-color:#ece5d3' });
+     const k2 = B.piece({ x: 310, y: 746, cls: 'chip', html: 'berry', rot: 2, z: 33, shadow: 'shadow-lg', style: 'font-size:64px;background-color:#ece5d3' });
+     const a = B.pin(66, 756), b = B.pin(326, 750), s = B.pin(170, 330);
      const s1 = B.string(s, a, 26), s2 = B.string(a, b, 12);
-     const rings = [[186, 798], [468, 794], [511, 795]].map(([cx, cy]) => B.marker('circle', { cx, cy, rx: 24, ry: 38 }, { width: 5 }));
-     const yl = B.piece({ x: 56, y: 868, cls: 'yellow', html: 'Chunks, not letters', rot: -2.5, z: 40, style: 'font-size:46px' });
-     const solved = B.stamp('Case<br>solved', 470, 500, 22, -16, { round: 136, paper: true });
-     B.cue('@0', [...bg], { stagger: .08 });
+     const rings = [[162, 798], [422, 792], [460, 793]].map(([cx, cy]) => B.marker('circle', { cx, cy, rx: 22, ry: 34 }, { width: 5 }));
+     const yl = B.piece({ x: 330, y: 588, cls: 'yellow', html: 'Chunks, not letters', rot: -2.5, z: 40, style: 'font-size:36px' });
+     const solved = B.stamp('Case<br>solved', 40, 540, 20, -16, { round: 120, paper: true });
      B.hero(berry, mag);
-     B.cue('puzzle.', [B.flash(), berry, ex]);
+     B.cue('@0', [...bg], { stagger: .08 });
+     B.cue('puzzle.', [B.flash(), berry]);
      B.cue('strawberry,', [q]);
      B.cue('slip.', [xout, wrong]);
      B.cue('Why?', [mag, sees]);
@@ -682,7 +702,7 @@ const SCENES = [
      const s1 = B.string(pins[0], pins[1], 10), s2 = B.string(pins[1], pins[2], 10);
      const win = B.piece({ x: 44, y: 214, cls: 'chip', html: 'mat', rot: -4, z: 50, shadow: 'shadow-lg', style: 'font-size:44px;background-color:#fff6d6', anim: 'hop', sfx: 'paper' });
      win.style.setProperty('--dx', '486px'); win.style.setProperty('--dy', '-162px');
-     const note = B.piece({ x: 44, y: 400, cls: 'strip', html: 'percentages are made-up examples', rot: -1, z: 30, style: 'font-size:21px;padding:5px 10px 3px', anim: 'wipe', sfx: 'none' });
+     const note = B.piece({ x: 44, y: 400, cls: 'strip', html: 'percentages are made-up examples', rot: -1, z: 30, style: 'font-size:23px;padding:5px 10px 3px', anim: 'wipe', sfx: 'none' });
      const nt = B.stamp('Next token', 60, 480, 40, -10);
      const yl = B.piece({ x: 200, y: 660, cls: 'yellow', html: 'Again & again', rot: 4, z: 40, style: 'font-size:56px' });
      B.cue('@0', [...bg, ...tp], { stagger: .12 });
@@ -726,15 +746,15 @@ const SCENES = [
    say: "One last clue: by A.I. math, this whole video is only about two hundred tokens. So how many tokens is your name? Guess in the comments.",
    build(B) {
      const bg = [B.fill('background:radial-gradient(ellipse at 50% 40%,#3a2716 0,#100b08 74%)'), B.news(-30, 1000, 280, 260, -5), B.news(480, 990, 280, 260, 6)];
-     const clue = B.piece({ x: 50, y: 130, cls: 'strip', html: 'ONE LAST CLUE · THIS WHOLE VIDEO ≈', rot: -2, z: 30, anim: 'wipe', sfx: 'type', style: 'font-size:27px;padding:6px 14px 4px' });
-     const count = B.piece({ x: 44, y: 196, cls: 'yellow', html: '<span class="n">200</span> tokens', rot: -3, z: 40, anim: 'drop', style: 'font-size:118px;padding:10px 26px 4px' });
-     const est = B.piece({ x: 70, y: 400, cls: 'strip', html: 'rough estimate: about 1.3 tokens per word', rot: 1, z: 30, anim: 'wipe', sfx: 'type', style: 'font-size:23px;padding:5px 12px 3px' });
-     const mag = B.sticker('magnifier', 500, 230, 190, -12, 35);
+     const clue = B.piece({ x: 50, y: 212, cls: 'strip', html: 'ONE LAST CLUE · THIS WHOLE VIDEO ≈', rot: -2, z: 30, anim: 'wipe', sfx: 'type', style: 'font-size:27px;padding:6px 14px 4px' });
+     const count = B.piece({ x: 44, y: 250, cls: 'yellow', html: '<span class="n">200</span> tokens', rot: -3, z: 40, anim: 'drop', style: 'font-size:118px;padding:10px 26px 4px' });
+     const est = B.piece({ x: 70, y: 418, cls: 'strip', html: 'rough estimate: about 1.3 tokens per word', rot: 1, z: 30, anim: 'wipe', sfx: 'type', style: 'font-size:23px;padding:5px 12px 3px' });
+     const mag = B.sticker('magnifier', 506, 270, 190, -12, 35);
      let t0 = null;
      B.onFrame(t => { if (!count.classList.contains('in')) { count.querySelector('.n').textContent = '0'; return; } if (t0 === null) t0 = t;
        const u = Math.min(1, (t - t0) / 1.6), e = 1 - Math.pow(1 - u, 3); count.querySelector('.n').textContent = Math.round(200 * e); });
-     const q = B.question('How many tokens is YOUR name?', { y: 500, size: 70, hot: [4] });
-     const cta = B.piece({ x: 120, y: 790, cls: 'yellow', html: 'Guess in the comments ↓', rot: 2, z: 40, anim: 'drop', style: 'font-size:46px' });
+     const q = B.question('How many tokens is YOUR name?', { y: 488, size: 68, hot: [4] });
+     const cta = B.piece({ x: 100, y: 740, cls: 'yellow', html: 'Guess in the comments ↓', rot: 2, z: 40, anim: 'drop', style: 'font-size:46px' });
      B.cue('@0', [...bg, clue], { stagger: .08 });
      B.hero(count, q.el);
      B.cue('whole', [count]);
@@ -908,7 +928,8 @@ function loadScene(i, opts = {}) {
   if (!opts.poster) { if (T.in) layer.classList.add(T.in); else smashCut(); }
   seed = 101 + i * 31;
   sceneHooks = [];
-  B = Builder(layer, L); s.build(B); B.aimSlides();
+  B = Builder(layer, L, s.head !== false); s.build(B); B.aimSlides();
+  window.__layoutNow = { L, head: s.head !== false, SAFE, SW, SH };   // read by check.js lint
   if (opts.poster) layer.querySelectorAll('.pre:not(.a-draw)').forEach(e => { if (getComputedStyle(e).opacity !== '0') (window.__preVisible = window.__preVisible || []).push((e.textContent || e.getAttribute('class') || '').trim().slice(0, 24)); });   // for check.js lint
   const moves = [['-14px', '-6px', 1.06, '40% 40%'], ['12px', '-8px', 1.055, '60% 45%'], ['-10px', '6px', 1.05, '45% 60%'], ['10px', '4px', 1.06, '55% 50%']][i % 4];
   B.cam.style.setProperty('--kx', moves[0]); B.cam.style.setProperty('--ky', moves[1]); B.cam.style.setProperty('--ks', moves[2]); B.cam.style.setProperty('--ko', moves[3]);
@@ -1029,7 +1050,7 @@ requestAnimationFrame(t => { lastT = t; tick(t); });
 document.fonts && document.fonts.ready.then(fit);
 
 /* scene plan, read by storyboard.js */
-window.__caseFile = { count: SCENES.length, scenes: SCENES.map(s => ({ layout: s.layout || BOARD_SHAPE, transition: s.transition || 'dissolve', kicker: s.kicker, title: s.title, say: s.say, fx: s.fx || [], assets: s.assets || [] })) };
+window.__caseFile = { format: FORMAT, stage: { w: SW, h: SH }, count: SCENES.length, scenes: SCENES.map(s => ({ layout: s.layout || BOARD_SHAPE, transition: s.transition || 'dissolve', kicker: s.kicker, title: s.title, say: s.say, fx: s.fx || [], assets: s.assets || [] })) };
 
 /* ---------- export hooks (used only by export.js) ---------- */
 if (EXP) {

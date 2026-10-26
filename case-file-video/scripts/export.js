@@ -1,4 +1,4 @@
-// Frame-accurate MP4 export of a case-file page: 1080x1920, 30 fps, H.264 + AAC.
+// Frame-accurate MP4 export of a case-file page: 1080x1920 (FORMAT '9:16') or 1920x1080 (FORMAT '16:9'), 30 fps, H.264 + AAC.
 // Usage: node export.js <page.html> <fontsource_dir> <work_dir> <out.mp4> [--voice am_michael:60,am_fenrir:40] [--speed 0.94] [--fx noir|clean]
 //          [--pron pron.json] [--models <kokoro dir>] [--fps 30] [--preview 6] [--reuse-voice] [--voice-only]
 //  1. reads each scene's narration from the page and renders it with narrate.py (Kokoro voice + word timings) into <work_dir>/voice
@@ -21,7 +21,7 @@ const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Sp
   F('Old Standard TT', 'old-standard-tt', 400, 'old-standard-tt-latin-400-normal.woff2'), F('Old Standard TT', 'old-standard-tt', 700, 'old-standard-tt-latin-700-normal.woff2')].join('\n');
 
 async function openPage(browser, exp) {
-  const ctx = await browser.newContext({ viewport: { width: 720, height: 1280 }, deviceScaleFactor: 1.5 });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 1280 }, deviceScaleFactor: 1.5 });   // fits either stage (720x1280 or 1280x720)
   const p = await ctx.newPage();
   p.on('pageerror', e => console.log('PAGEERR', e.message));
   await p.addInitScript(e => { window.__EXPORT__ = e; }, exp);
@@ -55,7 +55,7 @@ const run = (cmd, a) => execFileSync(cmd, a, { stdio: 'inherit' });
   const stage = await p.$('#stage'); const box = await stage.boundingBox();
   const cdp = await ctx.newCDPSession(p);   // direct CDP capture is ~2x faster than page.screenshot
   const grab = async () => Buffer.from((await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 92, optimizeForSpeed: true,
-    clip: { x: box.x, y: box.y, width: box.width, height: box.height, scale: 1080 / box.width } })).data, 'base64');
+    clip: { x: box.x, y: box.y, width: box.width, height: box.height, scale: 1.5 } })).data, 'base64');   // 1.5x the stage: 1080x1920 or 1920x1080
   const silent = path.join(work, 'video_silent.mp4');
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
     '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p', '-r', String(FPS), silent], { stdio: ['pipe', 'inherit', 'inherit'] });

@@ -7,7 +7,7 @@ const fs = require('fs'), path = require('path');
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
 const [page, fdir, out] = args;
-const COLS = +opt('cols', 3);
+let COLS = +opt('cols', 0);
 const F = (fam, dir, w, file) => `@font-face{font-family:'${fam}';font-weight:${w};src:url(http://local/f/${dir}/files/${file})}`;
 const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Special Elite', 'special-elite', 400, 'special-elite-latin-400-normal.woff2'),
   F('Courier Prime', 'courier-prime', 400, 'courier-prime-latin-400-normal.woff2'), F('Courier Prime', 'courier-prime', 700, 'courier-prime-latin-700-normal.woff2'),
@@ -16,7 +16,7 @@ const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', 
 
 (async () => {
   const b = await chromium.launch();
-  const ctx = await b.newContext({ viewport: { width: 720, height: 1280 }, deviceScaleFactor: .5 });
+  const ctx = await b.newContext({ viewport: { width: 1280, height: 1280 }, deviceScaleFactor: .5 });
   const p = await ctx.newPage();
   p.on('pageerror', e => console.log('PAGEERR', e.message));
   await p.addInitScript(() => { window.__EXPORT__ = { narration: null }; });   // export mode = stage at 1:1, no controls/overlays
@@ -28,6 +28,7 @@ const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', 
   await p.goto('http://local/page');
   await p.evaluate(() => document.fonts.ready);
   const meta = await p.evaluate(() => window.__caseFile);
+  const wide = meta.format === '16:9', CW = wide ? 520 : 360, IH = wide ? 292 : 640; if (!COLS) COLS = wide ? 2 : 3;
   const shots = [];
   for (let i = 1; i <= meta.count; i++) {
     await p.goto('http://local/page#scene' + i); await p.reload();
@@ -45,9 +46,9 @@ const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', 
     body{margin:0;background:#16110c;color:#e8dcc4;font-family:'Courier Prime',monospace;padding:28px}
     h1{font-family:Anton;font-weight:400;letter-spacing:1px;font-size:34px;margin:0 0 4px;color:#e9b82a;text-transform:uppercase}
     .sub{font-family:'Special Elite';color:#9c8f78;margin-bottom:22px}
-    .grid{display:grid;grid-template-columns:repeat(${COLS},360px);gap:22px}
+    .grid{display:grid;grid-template-columns:repeat(${COLS},${CW}px);gap:22px}
     .card{background:#211912;border:1px solid #3a2f24;border-radius:6px;overflow:hidden}
-    .card img{display:block;width:360px;height:640px}
+    .card img{display:block;width:${CW}px;height:${IH}px}
     .meta{padding:12px 14px 16px}.n{font-family:'Special Elite';font-size:12px;color:#9c8f78}
     .t{font-family:Anton;font-size:22px;text-transform:uppercase;color:#e9b82a;margin:2px 0 8px}
     .say{font-size:13px;line-height:1.45;color:#e8dcc4}
@@ -55,7 +56,7 @@ const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', 
     .chips{display:flex;flex-wrap:wrap;gap:5px}.chips span{font-size:11px;background:#33271c;border:1px solid #4a3a2a;padding:2px 6px;border-radius:3px}
     ul{margin:0;padding-left:18px;font-size:12px;color:#ffb4ab}
   </style></head><body><h1>${esc(opt('title', 'Storyboard'))}</h1><div class="sub">${meta.count} scenes · frames show each scene fully assembled</div><div class="grid">${cards}</div></body></html>`;
-  const sctx = await b.newContext({ viewport: { width: 28 * 2 + COLS * 360 + (COLS - 1) * 22, height: 800 }, deviceScaleFactor: 1 });
+  const sctx = await b.newContext({ viewport: { width: 28 * 2 + COLS * CW + (COLS - 1) * 22, height: 800 }, deviceScaleFactor: 1 });
   await sctx.route('http://local/f/**', r => r.fulfill({ path: path.join(fdir, r.request().url().replace('http://local/f/', '')) }));
   await sctx.route('http://local/sheet', r => r.fulfill({ contentType: 'text/html', body: sheet }));
   const sp = await sctx.newPage();
