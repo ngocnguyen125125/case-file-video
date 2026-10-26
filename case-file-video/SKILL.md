@@ -1,6 +1,6 @@
 ---
 name: case-file-video
-description: Make a vertical noir case-file explainer video in the newspaper-cutout, stop-motion evidence-board style: a playable web page plus an exported 1080x1920 MP4 with narration.
+description: "Make a vertical noir case-file explainer video in the newspaper-cutout, stop-motion evidence-board style, delivered as a playable web page plus an exported 1080x1920 MP4 with narration."
 ---
 
 # Case-file explainer video (newspaper-cutout · stop-motion · evidence board)
