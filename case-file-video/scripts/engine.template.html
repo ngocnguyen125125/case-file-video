@@ -1,0 +1,923 @@
+<!-- TOPIC: page title (2-4 word name) -->
+<title>The Token Case File</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Courier+Prime:wght@400;700&family=Old+Standard+TT:wght@400;700&family=Special+Elite&display=swap">
+<style>
+/* Layout: one 9:16 "film" stage (720x1280 design units) scaled to fit, with a slim control deck under it.
+   Single committed look: a noir detective's desk at night. */
+:root{
+  --desk:#140f0b;        /* desk in shadow */
+  --lamp:#f3c98a;        /* warm lamp light */
+  --paper:#ece2c8;       /* aged paper */
+  --ink:#1c1915;         /* typewriter ink */
+  --evidence:#b3231d;    /* stamp + string red */
+  --tape:#e9b82a;        /* evidence-tape yellow */
+  --ui:#e8dcc4;          /* control text */
+  --ui-dim:#9c8f78;
+  --ui-line:#3a2f24;
+  --f-display:'Anton','Impact','Arial Narrow',sans-serif;
+  --f-type:'Special Elite','Courier Prime','Courier New',monospace;
+  --f-mono:'Courier Prime','Courier New',monospace;
+  --f-news:'Old Standard TT','Times New Roman',serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--desk);color:var(--ui);font-family:var(--f-mono);overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding-block:10px}
+.stage-wrap{position:relative;flex:0 0 auto}
+.stage{position:absolute;left:0;top:0;width:720px;height:1280px;transform-origin:0 0;overflow:hidden;background:var(--desk);
+  border-radius:6px;box-shadow:0 0 0 1px #2a2119,0 20px 60px rgba(0,0,0,.6)}
+.stage *{box-sizing:border-box}
+.desk{position:absolute;inset:0;background-size:720px 1280px}
+.blinds{position:absolute;inset:-200px;pointer-events:none;mix-blend-mode:screen;
+  background:repeating-linear-gradient(-24deg,rgba(255,206,140,.085) 0 30px,transparent 30px 66px);
+  -webkit-mask-image:radial-gradient(ellipse 60% 48% at 62% 42%,#000 25%,transparent 75%);
+  mask-image:radial-gradient(ellipse 60% 48% at 62% 42%,#000 25%,transparent 75%);
+  animation:blinds 40s ease-in-out infinite alternate}
+@keyframes blinds{to{transform:translate(26px,10px)}}
+#dust{position:absolute;inset:0;pointer-events:none}
+
+/* header above the board */
+.head{position:absolute;left:0;right:0;top:268px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:5}
+.kicker{font-family:var(--f-type);font-size:16px;color:var(--ink);background:var(--paper);padding:5px 12px 3px;letter-spacing:.5px}
+.title{font-family:var(--f-display);font-size:46px;line-height:1;color:#141210;background:var(--tape);padding:9px 20px 5px;
+  text-transform:uppercase;letter-spacing:1px;max-width:680px;text-align:center;text-wrap:balance}
+.head .in{animation:hin .58s steps(7,end) both}
+.head .in.from-r{--hx:80px}
+@keyframes hin{from{opacity:0;transform:translateX(var(--hx,-80px)) rotate(var(--r,0deg));filter:blur(4px)}to{opacity:1;transform:rotate(var(--r,0deg));filter:blur(0)}}
+.caption .line.fresh{animation:capin .28s ease-out both}
+@keyframes capin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* the cork board */
+.board{position:absolute;left:0;top:437px;width:720px;height:405px;overflow:hidden;background-size:720px 405px;z-index:4;
+  box-shadow:0 10px 30px rgba(0,0,0,.65),inset 0 0 0 7px #2b1d12,inset 0 0 0 9px #4a3220,inset 0 0 40px rgba(0,0,0,.55)}
+.layer{position:absolute;inset:0}
+.layer.out{animation:outgo .42s ease-in both;z-index:2}
+.layer.enter{animation:enter .75s cubic-bezier(.2,.7,.2,1) both}
+@keyframes outgo{to{opacity:0;transform:scale(1.035);filter:blur(3px)}}
+@keyframes enter{from{transform:scale(1.06);filter:blur(2.5px)}to{transform:none;filter:blur(0)}}
+.cam{position:absolute;inset:0;transform-origin:var(--ko,50% 50%);animation:push 14s cubic-bezier(.37,0,.63,1) both}
+@keyframes push{from{transform:translate(0,0) scale(1)}to{transform:translate(var(--kx,0px),var(--ky,0px)) scale(var(--ks,1.05))}}
+.board.shake{animation:shake .22s linear}
+@keyframes shake{25%{transform:translate(2px,-1px)}50%{transform:translate(-2px,1px)}75%{transform:translate(1px,1px)}}
+.board-glare{position:absolute;inset:0;pointer-events:none;z-index:95;
+  background:radial-gradient(ellipse at 60% 30%,rgba(255,220,160,.10),transparent 60%),radial-gradient(ellipse at center,transparent 55%,rgba(20,10,0,.45) 100%)}
+
+.abs{position:absolute}
+.stage{--sh:drop-shadow(0 0 0 transparent)}
+.shadow{--sh:drop-shadow(1px 3px 3px rgba(0,0,0,.5));filter:var(--sh)}
+.shadow-lg{--sh:drop-shadow(3px 8px 8px rgba(0,0,0,.55));filter:var(--sh)}
+.paper{background-color:var(--paper);background-size:256px}
+.manila{background-color:#d8bd83;background-size:256px}
+.card{background-color:#f1ead6;font-family:var(--f-type);color:var(--ink);font-size:12px;line-height:17px;padding:12px 14px;
+  background-image:repeating-linear-gradient(transparent 0 16px,rgba(80,110,150,.25) 16px 17px)}
+.strip{background:#efe9da;padding:3px 8px 2px;font-family:var(--f-type);color:#2a2620;font-size:12px;white-space:nowrap}
+.chip{background-color:#e7e0cc;font-family:var(--f-mono);font-weight:700;color:#1f1b15;font-size:30px;line-height:1.15;padding:9px 16px 7px;white-space:nowrap}
+.chip.np-serif{font-family:var(--f-news);font-weight:700;letter-spacing:-.5px}
+.chip.np-head{font-family:var(--f-display);font-weight:400;letter-spacing:.5px;text-transform:uppercase;font-size:.92em}
+.chip.np-inv{background-color:#1e1c19;color:#eee6d2;font-family:var(--f-news);font-weight:700}
+.strip{background-color:#e9e2cf}
+.yellow{background:var(--tape);font-family:var(--f-display);color:#151310;text-transform:uppercase;padding:4px 12px 2px;letter-spacing:.5px;white-space:nowrap;font-size:30px}
+.news{width:200px;background:#d8d0bd;padding:8px;font-family:var(--f-news);font-size:6.3px;line-height:7.6px;color:#4f4a40;text-align:justify;column-count:2;column-gap:8px}
+.news h4{font-weight:700;font-size:12px;line-height:12px;color:#2e2a24;margin:0 0 4px;text-transform:uppercase;column-span:all}
+.news p{margin:0 0 3px;text-indent:6px}
+.tape{position:absolute;width:62px;height:20px;background:rgba(226,214,170,.72);box-shadow:0 1px 2px rgba(0,0,0,.2);z-index:60;
+  clip-path:polygon(0 8%,6% 0,12% 10%,20% 2%,30% 8%,42% 0,55% 9%,66% 1%,78% 8%,90% 0,100% 7%,96% 52%,100% 95%,88% 100%,76% 91%,64% 100%,50% 92%,38% 100%,26% 91%,14% 100%,0 93%,4% 50%)}
+.stamp{font-family:var(--f-display);color:var(--evidence);border:3.5px solid var(--evidence);padding:2px 10px 0;letter-spacing:2px;text-transform:uppercase;
+  mix-blend-mode:multiply;opacity:.9;white-space:nowrap;outline:1.5px solid var(--evidence);outline-offset:2px;z-index:70}
+.stamp.round{border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;outline:none;border-width:3px;line-height:1.05}
+.pin{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;z-index:80;
+  background:radial-gradient(circle at 35% 30%,#ff8a7a 0 12%,#d42a1f 35%,#7d0d08 100%);box-shadow:2px 3px 3px rgba(0,0,0,.5)}
+.pin.brass{background:radial-gradient(circle at 35% 30%,#fff1b8 0 12%,#c79a32 40%,#5e420c 100%);width:11px;height:11px;margin:-5.5px 0 0 -5.5px}
+svg.strings{position:absolute;left:0;top:0;width:720px;height:405px;z-index:78;pointer-events:none;overflow:visible}
+svg.strings path{stroke:var(--evidence);stroke-width:2.3;fill:none;filter:url(#ss)}
+.censor{position:absolute;background:#0b0b0b;z-index:23}
+.cut{position:absolute;border-left:2.5px dashed var(--evidence);z-index:12}
+.blank{display:inline-block;min-width:92px;border-bottom:3px solid var(--evidence);margin-left:8px;height:30px;vertical-align:-4px}
+
+/* entrance states */
+.pre{opacity:0}
+.in.a-drop{animation:drop .48s cubic-bezier(.2,1.35,.4,1) both}
+.in.a-base{animation:none;opacity:1}
+.in.a-wipe{animation:wipe .75s steps(9,end) both}
+.in.a-slam{animation:slam .25s steps(1,end) both}
+.in.a-pop{animation:pinIn .17s steps(1,end) both}
+.in.a-fade{animation:fade .5s ease both}
+.in.a-draw{animation:draw .75s steps(9,end) both}
+.in.a-hop{animation:hop .92s steps(5,end) both}
+@keyframes drop{from{opacity:0;transform:translateY(-22px) scale(1.2) rotate(calc(var(--r,0deg) + 5deg))}55%{opacity:1}to{opacity:1;transform:rotate(var(--r,0deg))}}
+@keyframes wipe{from{opacity:1;clip-path:inset(-30px 100% -30px -30px)}to{opacity:1;clip-path:inset(-30px -30px -30px -30px)}}
+@keyframes slide{from{opacity:1;transform:translate(var(--fx,0px),var(--fy,0px)) rotate(calc(var(--r,0deg) + var(--fr,0deg)));filter:blur(4px) var(--sh)}
+ 55%{filter:blur(0px) var(--sh)}
+ 80%{transform:translate(calc(var(--fx,0px) * -.018),calc(var(--fy,0px) * -.018)) rotate(var(--r,0deg))}
+ to{opacity:1;transform:translate(0,0) rotate(var(--r,0deg));filter:blur(0px) var(--sh)}}
+@keyframes slam{0%{opacity:.85;transform:scale(2.6) rotate(calc(var(--r,0deg) - 7deg));filter:blur(3px)}
+ 33%{opacity:.9;transform:scale(1.45) rotate(calc(var(--r,0deg) - 3deg));filter:blur(1px)}
+ 66%{opacity:.95;transform:scale(.96) rotate(var(--r,0deg));filter:blur(0)}
+ 100%{opacity:.9;transform:scale(1) rotate(var(--r,0deg));filter:blur(0)}}
+@keyframes pinIn{0%{opacity:1;transform:translateY(-26px) scale(1.55);box-shadow:10px 18px 10px rgba(0,0,0,.18)}50%{opacity:1;transform:translateY(-7px) scale(1.15);box-shadow:5px 9px 6px rgba(0,0,0,.3)}100%{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes draw{from{opacity:1;stroke-dashoffset:var(--len)}to{opacity:1;stroke-dashoffset:0}}
+@keyframes hop{0%{opacity:1;transform:translate(0,0) rotate(var(--r,0deg))}45%{transform:translate(calc(var(--dx)*.5),calc(var(--dy)*.5 - 40px)) rotate(0deg) scale(1.08)}100%{opacity:1;transform:translate(var(--dx),var(--dy)) rotate(0deg)}}
+.boil{animation:boil .5s steps(1,end) infinite}
+@keyframes boil{0%{translate:0 0;rotate:0deg}33%{translate:.6px -.5px;rotate:.18deg}66%{translate:-.5px .4px;rotate:-.14deg}}
+.stage.paused *,.stage.paused{animation-play-state:paused!important}
+
+/* captions under the board */
+.caption{position:absolute;left:36px;right:36px;top:880px;text-align:center;z-index:6;min-height:90px}
+.caption .line{display:inline;font-family:var(--f-mono);font-weight:700;font-size:28px;line-height:44px;color:var(--ink);background:var(--paper);
+  padding:4px 10px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+
+.caption .w.now{background:var(--evidence);color:#fff;box-shadow:0 0 0 3px var(--evidence)}
+.caption.off{display:none}
+.counter{position:absolute;left:0;right:0;top:1150px;display:flex;justify-content:center;gap:8px;z-index:6}
+.counter i{width:22px;height:6px;background:#3a2c20;display:block;transform:skewX(-20deg)}
+.counter i.done{background:#8a6a44}.counter i.cur{background:var(--tape)}
+.handle{position:absolute;left:0;right:0;top:1190px;text-align:center;font-family:var(--f-type);font-size:15px;color:#8f7c61;letter-spacing:2px;z-index:6}
+
+/* start + end overlay */
+.overlay{position:absolute;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:18px;padding-bottom:150px;
+  background:linear-gradient(to bottom,rgba(10,7,5,.1) 0%,rgba(10,7,5,.25) 55%,rgba(10,7,5,.92) 82%)}
+.overlay[hidden]{display:none}
+.big-btn{font-family:var(--f-display);font-size:40px;letter-spacing:2px;text-transform:uppercase;color:#141210;background:var(--tape);border:0;
+  padding:16px 34px 12px;cursor:pointer;transform:rotate(-1.5deg);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.big-btn:hover{filter:brightness(1.08)}
+.big-btn:focus-visible,.ctl button:focus-visible,.ctl select:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.overlay p{font-family:var(--f-type);font-size:17px;color:#d9ccb0;text-align:center;max-width:520px;line-height:1.5;margin:0}
+
+/* control deck */
+.ctl{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;max-width:100%;font-size:13px}
+.ctl button,.ctl select{font-family:var(--f-mono);font-size:13px;color:var(--ui);background:#211912;border:1px solid var(--ui-line);border-radius:4px;padding:7px 11px;cursor:pointer}
+.ctl button:hover,.ctl select:hover{border-color:#6b5638}
+.ctl button[aria-pressed="false"]{color:var(--ui-dim);text-decoration:line-through}
+.ctl select{max-width:210px}
+.ctl .status{color:var(--ui-dim);font-size:12px;min-width:0;text-align:center;flex-basis:100%}
+html.exporting body{padding:0!important}html.exporting .ctl{display:none}html.exporting .app{padding:0;justify-content:flex-start;align-items:flex-start}
+html.exporting .stage{border-radius:0;box-shadow:none}html.exporting .overlay{display:none!important}
+@media (prefers-reduced-motion:reduce){.blinds{animation:none}.cam{animation:none}.boil{animation:none}.in.a-slam,.layer.enter,.layer.out{animation-name:fade}}
+</style>
+
+<div class="app">
+  <div class="stage-wrap" id="wrap">
+    <div class="stage" id="stage">
+      <div class="desk" id="desk"></div>
+      <div class="blinds"></div>
+      <canvas id="dust" width="720" height="1280"></canvas>
+      <div class="head" id="head"></div>
+      <div class="board" id="board"><div class="board-glare"></div></div>
+      <div class="caption" id="cap"></div>
+      <div class="counter" id="counter"></div>
+      <!-- TOPIC: series / channel line -->
+      <div class="handle">CASE FILES · AI EXPLAINED</div>
+      <div class="overlay" id="startOv">
+        <button class="big-btn" id="startBtn" type="button">▶ Open the case</button>
+        <!-- TOPIC: start note -->
+        <p>About 60 seconds, with sound. The narrator is your browser's built-in voice and the music is generated live.</p>
+      </div>
+      <div class="overlay" id="endOv" hidden>
+        <button class="big-btn" id="replayBtn" type="button">↺ Replay the case</button>
+        <!-- TOPIC: one-line verdict shown on the end card -->
+        <p>A token is a puzzle piece of text. That's the whole case.</p>
+      </div>
+    </div>
+  </div>
+  <div class="ctl" id="ctl">
+    <button id="playBtn" type="button">▶ Play</button>
+    <button id="restartBtn" type="button">↺ Restart</button>
+    <select id="voiceSel" aria-label="Narrator voice"><option>Loading voices…</option></select>
+    <select id="rateSel" aria-label="Narration speed">
+      <option value="0.9">Speed 0.9×</option><option value="1" selected>Speed 1×</option><option value="1.1">Speed 1.1×</option>
+    </select>
+    <button id="musicBtn" type="button" aria-pressed="true">Music</button>
+    <button id="capBtn" type="button" aria-pressed="true">Captions</button>
+    <div class="status" id="status">Press play. Tip: screen-record the stage to export a video.</div>
+  </div>
+</div>
+
+<script>
+/*STICKERS*/
+</script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const stage = $('#stage'), wrap = $('#wrap'), board = $('#board');
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const R = (a, b) => a + rnd() * (b - a);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Export mode: export.js sets window.__EXPORT__ and drives a virtual clock frame by frame (MP4 render).
+const EXP = window.__EXPORT__ || null;
+if (EXP) { EXP.t = 0; EXP.timers = []; EXP.sfxLog = []; EXP.speech = []; EXP.done = false; document.documentElement.classList.add('exporting'); }
+const later = (fn, ms) => EXP ? EXP.timers.push({ at: EXP.t + ms / 1000, fn }) : setTimeout(fn, ms);
+
+/* ---------- fit stage ---------- */
+function fit() {
+  if (EXP) { stage.style.transform = 'none'; wrap.style.width = '720px'; wrap.style.height = '1280px'; return; }
+  const ctlH = $('#ctl').offsetHeight + 30;
+  const aw = document.documentElement.clientWidth - 32, ah = window.innerHeight - ctlH;
+  const s = Math.max(0.2, Math.min(aw / 720, ah / 1280));
+  stage.style.transform = `scale(${s})`;
+  wrap.style.width = 720 * s + 'px'; wrap.style.height = 1280 * s + 'px';
+}
+addEventListener('resize', fit);
+
+/* ---------- procedural textures (desk wood, cork, paper grain) ---------- */
+function canvasTex(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); return c.toDataURL('image/jpeg', .88); }
+function noise(g, w, h, amt, alpha) {
+  const id = g.getImageData(0, 0, w, h), d = id.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (rnd() - .5) * amt; d[i] += n; d[i + 1] += n; d[i + 2] += n; d[i + 3] = 255; }
+  g.putImageData(id, 0, 0);
+}
+const deskTex = canvasTex(720, 1280, (g, w, h) => {
+  g.fillStyle = '#1a130d'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 520; i++) {               // long wood grain lines
+    const y0 = R(-40, h + 40), amp = R(2, 14), fr = R(.002, .012), ph = R(0, 6);
+    g.strokeStyle = `rgba(${rnd() < .5 ? '60,40,24' : '8,5,3'},${R(.08, .35)})`; g.lineWidth = R(.6, 2.6);
+    g.beginPath(); for (let x = -10; x <= w + 10; x += 12) { const y = y0 + Math.sin(x * fr + ph) * amp + x * .05; x === -10 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke();
+  }
+  noise(g, w, h, 14);
+  const lg = g.createRadialGradient(400, 560, 40, 400, 600, 760);
+  lg.addColorStop(0, 'rgba(255,196,120,.30)'); lg.addColorStop(.45, 'rgba(160,100,50,.10)'); lg.addColorStop(1, 'rgba(0,0,0,.55)');
+  g.fillStyle = lg; g.fillRect(0, 0, w, h);
+});
+$('#desk').style.backgroundImage = `url(${deskTex})`;
+const corkTex = canvasTex(720, 405, (g, w, h) => {
+  g.fillStyle = '#a7774a'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 9000; i++) { const s = R(.6, 3.2); g.fillStyle = rnd() < .55 ? `rgba(70,40,18,${R(.15, .55)})` : `rgba(230,190,140,${R(.1, .4)})`; g.beginPath(); g.ellipse(R(0, w), R(0, h), s, s * R(.5, 1), R(0, 3), 0, 7); g.fill(); }
+  noise(g, w, h, 18);
+});
+board.style.backgroundImage = `url(${corkTex})`;
+const paperTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#ededed'; g.fillRect(0, 0, w, h); noise(g, w, h, 22);
+  for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(90,70,40,${R(.03, .09)})`; g.lineWidth = R(.3, 1); g.beginPath(); const x = R(0, w), y = R(0, h); g.moveTo(x, y); g.lineTo(x + R(-20, 20), y + R(-6, 6)); g.stroke(); }
+});
+const newsBack = canvasTex(256, 256, (g, w, h) => {      // faint print showing through from the back of the clipping
+  g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+  for (let y = 4; y < h; y += 7) { let x = R(-10, 0); while (x < w) { const wl = R(4, 20); if (x % 86 < 80) { g.fillStyle = `rgba(60,55,45,${R(.07, .13)})`; g.fillRect(x, y, wl, 2); } x += wl + R(3, 5); } }
+});
+const sheet = document.createElement('style');
+sheet.textContent = `.paper,.manila,.card,.chip,.strip,.kicker{background-image:url(${paperTex});background-blend-mode:multiply}
+.card{background-image:url(${paperTex}),repeating-linear-gradient(transparent 0 16px,rgba(80,110,150,.25) 16px 17px)}
+.chip,.strip{background-image:url(${paperTex}),url(${newsBack})}`;
+document.head.appendChild(sheet);
+
+/* stamp grunge mask */
+const grungeURL = (() => { const c = document.createElement('canvas'); c.width = c.height = 200; const g = c.getContext('2d'); const id = g.createImageData(200, 200);
+  for (let i = 0; i < id.data.length; i += 4) id.data[i + 3] = rnd() < .13 ? 0 : 255; g.putImageData(id, 0, 0);
+  for (let i = 0; i < 40; i++) g.clearRect(R(0, 200), R(0, 200), R(3, 16), R(1, 4)); return c.toDataURL(); })();
+
+/* dust motes in the lamp beam */
+const dctx = $('#dust').getContext('2d');
+const motes = Array.from({ length: 46 }, () => ({ x: R(80, 700), y: R(80, 1200), r: R(.6, 2.2), vx: R(-.08, .08), vy: R(-.12, .03), a: R(.15, .5) }));
+let dustOn = !reduced;
+function drawDust() {
+  dctx.clearRect(0, 0, 720, 1280);
+  for (const m of motes) {
+    if (dustOn && !(playing && paused)) { m.x += m.vx; m.y += m.vy; if (m.y < 40) m.y = 1240; if (m.x < 20) m.x = 700; if (m.x > 710) m.x = 30; }
+    dctx.fillStyle = `rgba(255,220,170,${m.a})`; dctx.beginPath(); dctx.arc(m.x, m.y, m.r, 0, 7); dctx.fill();
+  }
+}
+
+/* ---------- element builders ---------- */
+function mk(html, parent) { const t = document.createElement('div'); t.innerHTML = html.trim(); const e = t.firstChild; parent.appendChild(e); return e; }
+// scissor cut: a few straight cuts with slightly crooked corners
+function scissorCut(e, j = 4) {
+  const c = () => R(0, j), m = () => R(-j * .5, j * .9);
+  const p = [`${c()}px ${c()}px`];
+  if (rnd() < .6) p.push(`${R(30, 70)}% ${m()}px`);
+  p.push(`calc(100% - ${c()}px) ${c()}px`);
+  if (rnd() < .5) p.push(`calc(100% - ${m()}px) ${R(30, 70)}%`);
+  p.push(`calc(100% - ${c()}px) calc(100% - ${c()}px)`);
+  if (rnd() < .6) p.push(`${R(30, 70)}% calc(100% - ${m()}px)`);
+  p.push(`${c()}px calc(100% - ${c()}px)`);
+  if (rnd() < .5) p.push(`${m()}px ${R(30, 70)}%`);
+  e.style.clipPath = `polygon(${p.join(',')})`;
+}
+const NP_FONTS = ['np-serif', 'np-head', 'np-serif', 'np-inv', ''];
+const hashStr = t => [...t].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7);
+function torn(e, j = 2.5, n = 24) {
+  const p = [];
+  for (let i = 0; i <= n; i++) p.push(`${i / n * 100}% ${R(0, j)}px`);
+  for (let i = 0; i <= n; i++) p.push(`calc(100% - ${R(0, j)}px) ${i / n * 100}%`);
+  for (let i = n; i >= 0; i--) p.push(`${i / n * 100}% calc(100% - ${R(0, j)}px)`);
+  for (let i = n; i >= 0; i--) p.push(`${R(0, j)}px ${i / n * 100}%`);
+  e.style.clipPath = `polygon(${p.join(',')})`;
+}
+const WORDS = 'the of machine reading words language model text pieces bureau report engineers computer said would also number letters before after new system chopped signal small data tested every sentence analysts memory city laboratory announced response quickly trained records council experts question answer public evidence files numbers piece token count vocabulary dictionary'.split(' ');
+function para(n) { const s = []; for (let i = 0; i < n; i++) s.push(WORDS[Math.floor(rnd() * WORDS.length)]); s[0] = s[0][0].toUpperCase() + s[0].slice(1); return s.join(' ') + '.'; }
+const HEADS = ['Machines Learn To Read', 'The Word Puzzle', 'Bureau Of Language', 'New Electronic Brain', 'Signals Decoded', 'Text Into Numbers', 'Counting The Pieces'];
+
+function Builder(layer) {
+  const cam = mk('<div class="cam"></div>', layer);
+  const cues = [];
+  let strings = null;
+  const B = {
+    cam, cues,
+    el(html, anim = 'drop', sfx = 'paper') { const e = mk(html, cam); e.classList.add('pre', 'a-' + anim); e.dataset.sfx = anim === 'slide' && sfx === 'paper' ? 'slide' : sfx; return e; },
+    // every sliding item enters from the board edge nearest to it, like the reference video
+    aimSlides() {
+      cam.querySelectorAll('.a-slide').forEach(e => {
+        const x = e.offsetLeft, y = e.offsetTop, w = e.offsetWidth, h = e.offsetHeight, cx = x + w / 2, cy = y + h / 2;
+        const d = [['l', cx], ['r', 720 - cx], ['t', cy * 1.5], ['b', (405 - cy) * 1.5]].sort((a, b) => a[1] - b[1])[0][0];
+        const j = R(-24, 24);
+        const fx = d === 'l' ? -(x + w + 40) : d === 'r' ? 720 - x + 40 : j, fy = d === 't' ? -(y + h + 40) : d === 'b' ? 405 - y + 40 : j;
+        e.style.setProperty('--fx', fx.toFixed(0) + 'px'); e.style.setProperty('--fy', fy.toFixed(0) + 'px'); e.style.setProperty('--fr', R(-9, 9).toFixed(1) + 'deg');
+      });
+    },
+    piece({ x, y, w, h, rot = 0, cls = '', style = '', html = '', tornJ = 2.5, shadow = 'shadow', z = 1, anim = 'slide', sfx = 'paper' }) {
+      if (anim === 'slide' && w && h && w * h >= 90000) { anim = 'base'; sfx = 'none'; }
+      const e = B.el(`<div class="abs ${shadow}" style="left:${x}px;top:${y}px;--r:${rot}deg;transform:rotate(${rot}deg);z-index:${z}"></div>`, anim, sfx);
+      const inner = mk(`<div class="${cls}" style="${w ? `width:${w}px;` : ''}${h ? `height:${h}px;` : ''}${style}">${html}</div>`, e);
+      if (tornJ) (/\b(chip|strip|news|card)\b/.test(cls) ? scissorCut(inner, Math.max(3, tornJ + 1.5)) : torn(inner, tornJ));
+      // single-word clippings get mixed newspaper type, like letters cut from different pages
+      if (cls === 'chip' && /^[#\w]{1,8}$/.test(html) && !/background/.test(style)) { const f = NP_FONTS[hashStr(html) % NP_FONTS.length]; if (f) inner.classList.add(f); }
+      return e;
+    },
+    news(x, y, w, h, rot = 0, z = 1) {
+      let html = `<h4>${HEADS[Math.floor(rnd() * HEADS.length)]}</h4>`;
+      for (let i = 0; i < 8; i++) html += `<p>${para(24 + Math.floor(rnd() * 30))}</p>`;
+      return B.piece({ x, y, w, h, rot, z, cls: 'news', style: 'overflow:hidden', html, tornJ: 3 });
+    },
+    tape(x, y, rot = 0, w = 62) { return B.el(`<div class="tape" style="left:${x}px;top:${y}px;width:${w}px;--r:${rot}deg;transform:rotate(${rot}deg)"></div>`, 'fade', 'none'); },
+    sticker(name, x, y, h, rot = 0, z = 20) {
+      const s = STICKERS[name];
+      return B.el(`<img class="abs shadow-lg" alt="" src="${s.src}" style="left:${x}px;top:${y}px;height:${h}px;width:${Math.round(h * s.ar)}px;--r:${rot}deg;transform:rotate(${rot}deg);z-index:${z}">`, 'slide', 'paper');
+    },
+    stamp(text, x, y, size, rot, opts = {}) {
+      const st = opts.round ? `width:${opts.round}px;height:${opts.round}px;` : '';
+      const e = B.el(`<div class="abs stamp ${opts.round ? 'round' : ''}" style="left:${x}px;top:${y}px;font-size:${size}px;--r:${rot}deg;transform:rotate(${rot}deg);${st}${opts.style || ''}">${text}</div>`, 'slam', 'stamp');
+      e.style.maskImage = e.style.webkitMaskImage = `url(${grungeURL})`; e.style.maskSize = e.style.webkitMaskSize = '120px';
+      return e;
+    },
+    pin(x, y, brass = false) { const e = B.el(`<div class="pin ${brass ? 'brass' : ''}" style="left:${x}px;top:${y}px"></div>`, 'pop', 'pin'); e.pt = [x, y]; return e; },
+    string(a, b, sag = 12) {
+      if (!strings) { strings = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); strings.setAttribute('class', 'strings');
+        strings.innerHTML = '<defs><filter id="ss" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="1.5" dy="2.5" stdDeviation="1.2" flood-opacity=".5"/></filter></defs>'; cam.appendChild(strings); }
+      a = a.pt || a; b = b.pt || b;
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p.setAttribute('d', `M${a[0]} ${a[1]} Q${(a[0] + b[0]) / 2} ${(a[1] + b[1]) / 2 + sag} ${b[0]} ${b[1]}`);
+      strings.appendChild(p);
+      const len = Math.ceil(p.getTotalLength ? p.getTotalLength() : 600) + 2;
+      p.style.strokeDasharray = len; p.style.setProperty('--len', len); p.style.strokeDashoffset = len;
+      p.classList.add('pre', 'a-draw'); p.dataset.sfx = 'string';
+      return p;
+    },
+    // cue: key is a narration word (exact, case-insensitive), "word*" for prefix, or "@1.5" for seconds after scene start
+    cue(key, items, opts = {}) { cues.push({ key, items: [].concat(items), stagger: opts.stagger ?? .09 }); },
+  };
+  return B;
+}
+
+/* ---------- scenes ----------  TOPIC: replace this whole SCENES array (worked example: 'What is a token?') */
+const SCENES = [
+ { kicker: 'CASE FILE #001 · AI EXPLAINED', title: 'What is a token?',
+   say: "Case file number one. The suspect: every A.I. chatbot you've ever talked to. Its secret? It doesn't actually read words.",
+   build(B) {
+     const bg = [B.news(-10, -6, 230, 200, -3), B.news(470, 250, 260, 170, 4),
+       B.piece({ x: 18, y: 18, w: 300, h: 370, rot: -1.5, cls: 'manila', tornJ: 3 })];
+     const chart = B.piece({ x: 40, y: 38, w: 230, h: 334, rot: -1.5, tornJ: 2, z: 2,
+       style: 'position:relative;background:#e6dfcd;background-image:repeating-linear-gradient(#e6dfcd 0 23px,#6d675c 23px 24px)',
+       html: [6, 5, 4, 3, 2, 1].map((n, i) => `<div style="position:absolute;left:6px;top:${i * 48 + 6}px;font:11px var(--f-mono);color:#555">${n}'0"</div>`).join('') });
+     const t1 = B.tape(30, 22, -30), t2 = B.tape(272, 20, 25);
+     const robot = B.sticker('robot', 88, 52, 315, -1.5, 20);
+     const bar = B.el(`<div class="censor" style="left:124px;top:97px;width:60px;height:17px;--r:-1.5deg;transform:rotate(-1.5deg)"></div>`, 'wipe', 'none');
+     const subj = B.piece({ x: 70, y: 340, cls: 'strip', html: 'SUBJECT: LARGE LANGUAGE MODEL', rot: -2, z: 30, anim: 'wipe', sfx: 'type' });
+     const card = B.piece({ x: 392, y: 34, w: 300, h: 196, rot: 2.5, cls: 'card', z: 25, tornJ: 1.2,
+       html: `<b style="font-family:var(--f-display);font-size:16px;letter-spacing:1px;font-weight:400">SUSPECT PROFILE</b><br>ALIAS: "the chatbot"<br>KNOWN FOR: answering anything<br>READS: billions of pages<br>SECRET: <span style="background:#111;color:#111">doesn't read words</span>` });
+     const t3 = B.tape(520, 24, -4, 70);
+     const p1 = B.pin(215, 108), p2 = B.pin(585, 145), p3 = B.pin(530, 300, true);
+     const s1 = B.string(p1, p2, 18), s2 = B.string(p2, p3, 8);
+     const cls = B.stamp('Classified', 520, 168, 30, -12);
+     const yl = B.piece({ x: 360, y: 288, cls: 'yellow', html: "It doesn't read words", rot: -3, z: 40, tornJ: 2.5 });
+     const ex = B.piece({ x: 420, y: 338, cls: 'strip', html: 'EXHIBIT 1 — WHAT IT SEES INSTEAD', rot: -1, z: 41, anim: 'wipe', sfx: 'type' });
+     B.cue('@0', [...bg, chart], { stagger: .12 });
+     B.cue('suspect:', [robot, t1, t2, subj]);
+     B.cue("you've", [bar]);
+     B.cue('talked', [card, t3]);
+     B.cue('secret?', [p1, p2, s1, cls]);
+     B.cue("doesn't", [yl, p3, s2]);
+     B.cue('words.', [ex]);
+   } },
+ { kicker: 'EVIDENCE A · THE CHOP', title: 'Text gets chopped',
+   say: "Before an A.I. reads anything, it chops your text into little pieces. These pieces are called tokens.",
+   build(B) {
+     const bg = [B.news(500, -10, 240, 190, 3), B.piece({ x: 20, y: 14, w: 560, h: 380, rot: -.8, cls: 'paper', tornJ: 3 })];
+     const tp = [B.tape(30, 10, -20), B.tape(520, 12, 18)];
+     const strip = B.piece({ x: 56, y: 40, cls: 'chip', html: 'The cat sat on the mat.', rot: -1, z: 10, tornJ: 1.5, anim: 'wipe', sfx: 'type', style: 'font-size:32px' });
+     const sc = B.sticker('scissors', 520, 190, 70, -24, 30);
+     const cuts = [128, 203, 278, 340, 416].map(x => B.el(`<div class="cut" style="left:${x}px;top:28px;height:84px"></div>`, 'fade', 'none'));
+     const words = ['The', 'cat', 'sat', 'on', 'the', 'mat'];
+     const pos = [[46, 170, -6], [150, 196, 4], [250, 168, -3], [348, 200, 5], [430, 160, -4], [140, 290, 3]];
+     const chips = words.map((w, i) => B.piece({ x: pos[i][0], y: pos[i][1], cls: 'chip', html: w, rot: pos[i][2], z: 20 + i, tornJ: 2.5, shadow: 'shadow-lg', style: 'font-size:28px' }));
+     const pins = pos.map(([x, y]) => B.pin(x + 14, y + 2));
+     const strs = pins.slice(1).map((p, i) => B.string(pins[i], p, 10));
+     const yl = B.piece({ x: 330, y: 300, cls: 'yellow', html: 'Pieces = tokens', rot: -3, z: 40 });
+     const p7 = B.pin(455, 306); const s7 = B.string(pins[5], p7, 16);
+     const ev = B.stamp('Evidence A', 590, 60, 20, 12);
+     B.cue('@0', [...bg, ...tp], { stagger: .12 });
+     B.cue('Before', [strip]);
+     B.cue('chops', [sc, ...cuts], { stagger: .05 });
+     B.cue('little', chips, { stagger: .11 });
+     B.cue('These', [...pins, ...strs], { stagger: .06 });
+     B.cue('tokens.', [yl, p7, s7, ev]);
+   } },
+ { kicker: 'EVIDENCE B · BIG WORDS', title: '1 word → 3 tokens',
+   say: "Common words, like 'the' or 'cat', are usually one token. Longer, rarer words get split up. 'Unbelievable' might become: un... believ... able.",
+   build(B) {
+     const bg = [B.news(-20, 250, 230, 170, -4), B.piece({ x: 22, y: 16, w: 676, h: 372, rot: .6, cls: 'paper', tornJ: 3 })];
+     const tp = [B.tape(40, 14, -20), B.tape(630, 18, 18)];
+     const card = B.piece({ x: 440, y: 40, w: 238, cls: 'card', rot: 2, z: 30, tornJ: 1, style: 'font-size:13px;line-height:17px',
+       html: '"the" → 1 token<br>"cat" → 1 token<br>common word = 1 piece' });
+     const strip = B.piece({ x: 60, y: 46, w: 350, h: 64, cls: 'chip', rot: -1, z: 10, tornJ: 1.5, anim: 'wipe', sfx: 'type',
+       style: 'font-size:40px;letter-spacing:3px;display:flex;align-items:center;padding-left:22px', html: 'unbelievable' });
+     const c1 = B.el(`<div class="cut" style="left:137px;top:30px;height:96px"></div>`, 'fade', 'none');
+     const c2 = B.el(`<div class="cut" style="left:299px;top:30px;height:96px"></div>`, 'fade', 'none');
+     const sc = B.sticker('scissors', 330, 136, 60, 12, 30);
+     const lab = B.piece({ x: 64, y: 118, cls: 'strip', html: 'ONE RARE WORD', rot: -1, z: 15, anim: 'wipe', sfx: 'type' });
+     const defs = [['un', 70, 205, -5], ['believ', 215, 225, 3], ['able', 410, 200, -2]];
+     const chips = [], pins = [], tags = [];
+     defs.forEach(([t, x, y, r], i) => {
+       chips.push(B.piece({ x, y, cls: 'chip', html: t, rot: r, z: 20 + i, tornJ: 2.5, shadow: 'shadow-lg', style: 'font-size:34px' }));
+       pins.push(B.pin(x + 14, y + 2));
+       tags.push(B.piece({ x: x + 10, y: y + 66, cls: 'strip', html: `TOKEN ${i + 1}`, rot: r * .6, z: 26, style: 'font-size:11px', anim: 'wipe', sfx: 'type' }));
+     });
+     const s1 = B.string(pins[0], pins[1], 12), s2 = B.string(pins[1], pins[2], 12);
+     const yl = B.piece({ x: 440, y: 300, cls: 'yellow', html: '1 word = 3 tokens', rot: -3, z: 40 });
+     const p4 = B.pin(560, 305); const s3 = B.string(pins[2], p4, 14);
+     B.cue('@0', [...bg, ...tp], { stagger: .12 });
+     B.cue('Common', [card]);
+     B.cue('Longer,', [strip, lab]);
+     B.cue('split', [sc, c1, c2]);
+     B.cue('un...', [chips[0], pins[0], tags[0]]);
+     B.cue('believ...', [chips[1], pins[1], tags[1], s1]);
+     B.cue('able.', [chips[2], pins[2], tags[2], s2, yl, p4, s3]);
+   } },
+ { kicker: 'EVIDENCE C · THE CODE', title: 'Tokens become numbers',
+   say: "Next, every token is swapped for a number. That's all the A.I. ever sees: a long list of numbers.",
+   build(B) {
+     const bg = [B.news(480, -14, 260, 200, 3), B.piece({ x: 16, y: 18, w: 450, h: 370, rot: -1, cls: 'manila', tornJ: 3 })];
+     const tp = [B.tape(26, 16, -28), B.tape(400, 14, 22)];
+     const toks = [['The', '464'], ['cat', '9059'], ['sat', '10139']];
+     const chips = [], ids = [], pA = [], pB = [], strs = [];
+     toks.forEach(([t, n], i) => {
+       const y = 40 + i * 82;
+       chips.push(B.piece({ x: 44, y, cls: 'chip', html: t, rot: R(-4, 4), z: 20, shadow: 'shadow-lg', style: 'font-size:30px' }));
+       ids.push(B.piece({ x: 270, y: y + 4, cls: 'chip', html: '#' + n, rot: R(-4, 4), z: 20, shadow: 'shadow-lg', style: 'font-size:28px;color:var(--evidence)' }));
+       const a = B.pin(150, y + 30), b = B.pin(276, y + 30); pA.push(a); pB.push(b); strs.push(B.string(a, b, 6));
+     });
+     const ledger = B.piece({ x: 486, y: 40, w: 210, cls: 'card', rot: 2.5, z: 25, tornJ: 1, style: 'font-size:12px;line-height:17px',
+       html: `<b style="font-family:var(--f-display);font-weight:400;font-size:15px;letter-spacing:1px">TOKEN REGISTER</b><br>The ......... 464<br>cat ........ 9059<br>sat ....... 10139<br>on ........... 389<br><span style="font-size:10px;color:#6b6252">ID numbers are examples</span>` });
+     const tape3 = B.tape(560, 30, -6, 70);
+     const list = B.piece({ x: 40, y: 300, cls: 'strip', html: '[ 464, 9059, 10139, 389, 290, 2450, 13 ]', rot: -1.5, z: 30, anim: 'wipe', sfx: 'type', style: 'font-size:17px;padding:6px 12px 4px' });
+     const yl = B.piece({ x: 470, y: 260, cls: 'yellow', html: 'Only numbers', rot: -3, z: 40 });
+     const dec = B.stamp('Decoded', 520, 330, 22, 8);
+     B.cue('@0', [...bg, ...tp], { stagger: .12 });
+     B.cue('every', chips, { stagger: .12 });
+     B.cue('swapped', [...pA, ...ids, ...pB, ...strs], { stagger: .05 });
+     B.cue('number.', [ledger, tape3]);
+     B.cue('sees:', [list]);
+     B.cue('numbers.', [yl, dec]);
+   } },
+ { kicker: 'FIELD NOTES', title: 'The ¾ rule',
+   say: "Rule of thumb: in English, one token is about three quarters of a word. So a hundred tokens is roughly seventy-five words.",
+   build(B) {
+     const bg = [B.news(-14, -10, 240, 190, -2), B.news(500, 230, 240, 190, 3), B.piece({ x: 40, y: 22, w: 640, h: 360, rot: .8, cls: 'paper', tornJ: 3 })];
+     const tp = [B.tape(60, 18, -18), B.tape(610, 20, 20)];
+     const stamp = B.stamp('Rule of thumb', 70, 46, 22, -6);
+     const c1 = B.piece({ x: 70, y: 100, cls: 'chip', html: '1 token ≈ ¾ word', rot: -2, z: 20, shadow: 'shadow-lg', style: 'font-size:34px' });
+     const mag = B.sticker('magnifier', 556, 34, 120, 14, 24);
+     // two-scale ruler: tokens on top, words underneath
+     let ticks = '';
+     for (let i = 0; i <= 20; i++) { const x = 20 + i * 24; ticks += `<line x1="${x}" y1="0" x2="${x}" y2="${i % 5 ? 10 : 20}" stroke="#2a2620" stroke-width="1.4"/>`; if (i % 5 === 0) ticks += `<text x="${x}" y="33" font-family="Courier Prime" font-size="12" text-anchor="middle" fill="#2a2620">${i * 5}</text>`; }
+     for (let i = 0; i <= 15; i++) { const x = 20 + i * 24 * 20 / 15; ticks += `<line x1="${x}" y1="70" x2="${x}" y2="${i % 5 ? 60 : 50}" stroke="#8a1b15" stroke-width="1.4"/>`; if (i % 5 === 0) ticks += `<text x="${x}" y="46" font-family="Courier Prime" font-size="12" text-anchor="middle" fill="#8a1b15">${i * 5}</text>`; }
+     const ruler = B.piece({ x: 70, y: 196, w: 560, h: 76, rot: -.5, z: 22, tornJ: 1, cls: 'paper', anim: 'wipe', sfx: 'string',
+       style: 'background-color:#f2ead2;position:relative',
+       html: `<svg width="560" height="76" viewBox="0 0 560 76" style="display:block">${ticks}<text x="552" y="16" text-anchor="end" font-family="Special Elite" font-size="11" fill="#2a2620">TOKENS</text><text x="552" y="66" text-anchor="end" font-family="Special Elite" font-size="11" fill="#8a1b15">WORDS</text></svg>` });
+     const c2 = B.piece({ x: 90, y: 296, cls: 'chip', html: '100 tokens ≈ 75 words', rot: 1.5, z: 25, shadow: 'shadow-lg', style: 'font-size:30px' });
+     const yl = B.piece({ x: 528, y: 298, cls: 'yellow', html: 'In English', rot: -4, z: 40, style: 'font-size:24px' });
+     const pA = B.pin(92, 110), pB = B.pin(110, 304, true); const s = B.string(pA, pB, -30);
+     B.cue('@0', [...bg, ...tp], { stagger: .12 });
+     B.cue('Rule', [stamp]);
+     B.cue('one', [c1]);
+     B.cue('quarters', [mag]);
+     B.cue('hundred', [ruler, pA, pB, s]);
+     B.cue('seventy-five', [c2, yl]);
+   } },
+ { kicker: 'UNSOLVED CASE', title: 'The strawberry mystery',
+   say: "That solves a famous mystery. Ask some A.I.s how many R's are in strawberry, and they get it wrong. Why? They see chunks, not letters.",
+   build(B) {
+     const bg = [B.news(240, 280, 240, 150, -3), B.piece({ x: 14, y: 22, w: 330, h: 360, rot: -2.5, cls: 'manila', tornJ: 3 }),
+       B.piece({ x: 330, y: 14, w: 370, h: 250, rot: 1.8, cls: 'paper', tornJ: 3 })];
+     const tp = [B.tape(20, 30, -35), B.tape(290, 22, 30), B.tape(600, 8, 10)];
+     const berry = B.sticker('strawberry', 60, 50, 250, -6, 20);
+     const ex = B.piece({ x: 40, y: 330, cls: 'strip', html: 'EXHIBIT C — ONE STRAWBERRY', rot: -2, z: 30, anim: 'wipe', sfx: 'type' });
+     const q = B.piece({ x: 362, y: 36, w: 310, cls: 'card', rot: 1.8, z: 25, tornJ: 1, style: 'font-size:13px;line-height:20px;background-image:none;background-color:#f1ead6',
+       html: `Q: How many <b style="color:var(--evidence)">R</b>'s in "strawberry"?<br>AI: <span style="text-decoration:line-through">2</span> ...<br>REAL ANSWER: 3` });
+     const wrong = B.stamp('Wrong', 560, 108, 26, -14);
+     const mag = B.sticker('magnifier', 205, 170, 170, 12, 24);
+     const sees = B.piece({ x: 372, y: 175, cls: 'strip', html: 'WHAT THE AI ACTUALLY SEES:', rot: -1, z: 31, anim: 'wipe', sfx: 'type' });
+     const k1 = B.piece({ x: 372, y: 212, cls: 'chip', html: 'straw', rot: -3, z: 32, shadow: 'shadow-lg', style: 'font-size:32px' });
+     const k2 = B.piece({ x: 520, y: 205, cls: 'chip', html: 'berry', rot: 4, z: 33, shadow: 'shadow-lg', style: 'font-size:32px' });
+     const a = B.pin(432, 218), b = B.pin(580, 211), s = B.pin(140, 110);
+     const s1 = B.string(s, a, 22), s2 = B.string(a, b, 10);
+     const yl = B.piece({ x: 385, y: 305, cls: 'yellow', html: 'Chunks, not letters', rot: -2.5, z: 40 });
+     const solved = B.stamp('Case<br>solved', 236, 26, 14, -16, { round: 92 });
+     B.cue('@0', [...bg, ...tp], { stagger: .12 });
+     B.cue('mystery.', [berry, ex]);
+     B.cue('strawberry,', [q]);
+     B.cue('wrong.', [wrong]);
+     B.cue('Why?', [mag, sees]);
+     B.cue('chunks,', [k1, k2, a, b, s, s1, s2], { stagger: .07 });
+     B.cue('letters.', [yl, solved]);
+   } },
+ { kicker: 'EVIDENCE D · THE BILL', title: 'Measured in tokens',
+   say: "Tokens are also how A.I. gets measured. Its memory limit, its price, and its speed are all counted in tokens.",
+   build(B) {
+     const bg = [B.news(-10, 230, 250, 190, -3), B.news(480, -12, 250, 170, 2), B.piece({ x: 18, y: 16, w: 684, h: 374, rot: -.5, cls: 'paper', tornJ: 3 })];
+     const tp = [B.tape(30, 12, -22), B.tape(640, 14, 20)];
+     const meas = B.stamp('Measured', 40, 30, 20, -8);
+     const items = [['cabinet', 50, 70, 190, -4, 'MEMORY LIMIT', 64, 285], ['coins', 268, 110, 150, 3, 'PRICE', 300, 285], ['stopwatch', 490, 60, 170, 5, 'SPEED', 520, 250]];
+     const st = [], labs = [], pins = [];
+     items.forEach(([n, x, y, h, r, lab, lx, ly]) => {
+       st.push(B.sticker(n, x, y, h, r, 20));
+       labs.push(B.piece({ x: lx, y: ly, cls: 'strip', html: lab, rot: r * .5, z: 30, anim: 'wipe', sfx: 'type', style: 'font-size:14px' }));
+       pins.push(B.pin(x + 40, y + 16));
+     });
+     const yl = B.piece({ x: 210, y: 330, cls: 'yellow', html: 'Counted in tokens', rot: -2, z: 40 });
+     const hub = B.pin(370, 336);
+     const strs = pins.map(p => B.string(p, hub, 18));
+     B.cue('@0', [...bg, ...tp], { stagger: .12 });
+     B.cue('measured.', [meas]);
+     B.cue('memory', [st[0], labs[0]]);
+     B.cue('price,', [st[1], labs[1]]);
+     B.cue('speed', [st[2], labs[2]]);
+     B.cue('counted', [...pins, hub, ...strs], { stagger: .08 });
+     B.cue('tokens.', [yl]);
+   } },
+ { kicker: 'EVIDENCE E · THE ANSWER', title: 'One token at a time',
+   say: "And when it answers you, it writes one token at a time, guessing the most likely next piece, again and again.",
+   build(B) {
+     const bg = [B.news(500, 240, 250, 190, 3), B.piece({ x: 18, y: 18, w: 520, h: 370, rot: -1, cls: 'paper', tornJ: 3 })];
+     const tp = [B.tape(30, 14, -24), B.tape(470, 14, 22)];
+     const strip = B.piece({ x: 44, y: 44, cls: 'chip', html: 'The cat sat on the<span class="blank"></span>', rot: -1, z: 10, tornJ: 1.5, anim: 'wipe', sfx: 'type', style: 'font-size:28px' });
+     const dice = B.sticker('dice', 560, 40, 110, 8, 24);
+     const cands = [['mat', '62%', 70, 190, -4], ['floor', '21%', 210, 214, 3], ['moon', '1%', 380, 186, -2]];
+     const chips = [], tags = [], pins = [];
+     cands.forEach(([w, p, x, y, r]) => {
+       chips.push(B.piece({ x, y, cls: 'chip', html: w, rot: r, z: 20, shadow: 'shadow-lg', style: 'font-size:28px' }));
+       tags.push(B.piece({ x: x + 12, y: y + 60, cls: 'strip', html: `CHANCE ${p}`, rot: r * .5, z: 26, anim: 'wipe', sfx: 'type' }));
+       pins.push(B.pin(x + 14, y + 2));
+     });
+     const s1 = B.string(pins[0], pins[1], 10), s2 = B.string(pins[1], pins[2], 10);
+     // winner hops from its pin up into the blank
+     const win = B.piece({ x: 70, y: 190, cls: 'chip', html: 'mat', rot: -4, z: 50, shadow: 'shadow-lg', style: 'font-size:28px;background-color:#fff6d6', anim: 'hop', sfx: 'paper' });
+     win.style.setProperty('--dx', '300px'); win.style.setProperty('--dy', '-146px');
+     const note = B.piece({ x: 44, y: 316, cls: 'strip', html: 'percentages are made-up examples', rot: -1, z: 30, style: 'font-size:11px', anim: 'wipe', sfx: 'none' });
+     const nt = B.stamp('Next token', 545, 322, 24, -10);
+     const yl = B.piece({ x: 505, y: 252, cls: 'yellow', html: 'Again & again', rot: 4, z: 40, style: 'font-size:26px' });
+     B.cue('@0', [...bg, ...tp], { stagger: .12 });
+     B.cue('answers', [strip]);
+     B.cue('guessing', [dice, ...chips], { stagger: .1 });
+     B.cue('likely', [...tags, ...pins, s1, s2, note], { stagger: .05 });
+     B.cue('next', [win, nt]);
+     B.cue('again', [yl]);
+   } },
+ { kicker: 'THE VERDICT', title: 'Case closed',
+   say: "The verdict: a token is a puzzle piece of text. Case closed.",
+   build(B) {
+     const bg = [B.news(-12, -12, 250, 190, -3), B.news(470, 250, 260, 180, 2), B.piece({ x: 20, y: 18, w: 280, h: 370, rot: -2, cls: 'manila', tornJ: 3 })];
+     const tp = [B.tape(30, 14, -26), B.tape(250, 14, 24)];
+     const robot = B.sticker('robot', 70, 40, 300, -2, 20);
+     const bar = B.el(`<div class="censor" style="left:109px;top:83px;width:57px;height:16px;--r:-2deg;transform:rotate(-2deg)"></div>`, 'fade', 'none');
+     const verdict = B.stamp('Verdict', 330, 30, 64, -4, { style: 'background:#f3ecd9;mix-blend-mode:normal;opacity:1' });
+     const card = B.piece({ x: 340, y: 150, w: 340, cls: 'card', rot: 1.5, z: 25, tornJ: 1, style: 'font-size:15px;line-height:22px;background-image:none;background-color:#f1ead6',
+       html: '<b style="font-family:var(--f-display);font-weight:400;font-size:18px;letter-spacing:1px">TOKEN (n.)</b><br>A puzzle piece of text.<br>Words go in. Pieces come out.' });
+     const pcs = [['to', 352, 270, -5], ['ken', 430, 286, 4], ['s', 516, 266, -3]].map(([t, x, y, r]) => B.piece({ x, y, cls: 'chip', html: t, rot: r, z: 30, shadow: 'shadow-lg', style: 'font-size:26px' }));
+     const closed = B.stamp('Case<br>closed', 590, 270, 18, -14, { round: 108 });
+     B.cue('@0', [...bg, ...tp, robot, bar], { stagger: .12 });
+     B.cue('verdict:', [verdict]);
+     B.cue('token', [card]);
+     B.cue('puzzle', pcs, { stagger: .12 });
+     B.cue('Case', [closed]);
+   } },
+];
+
+/* ---------- audio: music + sfx (Web Audio) ---------- */
+let AC = null, master, musicBus, sfxBus, verb, musicOn = true, ducked = false, schedTimer = null;
+function initAudio(ctx) {
+  if (AC && !ctx) return;
+  AC = ctx || new (window.AudioContext || window.webkitAudioContext)();
+  const comp = AC.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3;
+  master = AC.createGain(); master.gain.value = .9; master.connect(comp); comp.connect(AC.destination);
+  musicBus = AC.createGain(); musicBus.gain.value = 0; musicBus.connect(master);
+  sfxBus = AC.createGain(); sfxBus.gain.value = .8; sfxBus.connect(master);
+  // small room reverb from a generated impulse
+  verb = AC.createConvolver(); const len = AC.sampleRate * 2.4, ir = AC.createBuffer(2, len, AC.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); }
+  verb.buffer = ir; const vg = AC.createGain(); vg.gain.value = .35; verb.connect(vg); vg.connect(musicBus);
+  noiseBuf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate); const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  startCrackle();
+}
+let noiseBuf, NOW = null;
+const now = () => NOW ?? AC.currentTime;   // offline render sets NOW to the logged event time
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+function env(g, t, a, peak, d, sus = 0) { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(Math.max(sus, .0001), t + a + d); }
+function noiseSrc(t, dur) { const s = AC.createBufferSource(); s.buffer = noiseBuf; s.start(t, Math.random()); s.stop(t + dur + .05); return s; }
+
+// noir jazz bed: Am9 – Fmaj7 – Dm9 – E7(b9), 76 bpm, swung
+const BPM = 76, BEAT = 60 / BPM;
+const CHORDS = [
+  { root: 45, pad: [60, 64, 67, 71], tones: [57, 60, 64, 67, 71, 72] },
+  { root: 41, pad: [57, 60, 64, 67], tones: [57, 60, 64, 65, 69, 72] },
+  { root: 38, pad: [53, 57, 60, 64], tones: [53, 57, 60, 62, 64, 69] },
+  { root: 40, pad: [56, 59, 62, 65], tones: [56, 59, 62, 64, 65, 68] },
+];
+let nextBeatT = 0, beatN = 0;
+function startMusic() { nextBeatT = AC.currentTime + .15; beatN = 0; clearInterval(schedTimer); schedTimer = setInterval(schedule, 30); setMusicLevel(); }
+function stopMusic() { clearInterval(schedTimer); schedTimer = null; }
+function schedule() {
+  while (nextBeatT < AC.currentTime + .2) { playBeat(beatN, nextBeatT); nextBeatT += BEAT; beatN++; }
+}
+function playBeat(n, t) {
+  const bar = Math.floor(n / 4), b = n % 4, ch = CHORDS[Math.floor(bar / 2) % 4], nextCh = CHORDS[(Math.floor(bar / 2) + 1) % 4];
+  if (b === 0 && bar % 2 === 0) ch.pad.forEach(m => pad(m, t, BEAT * 8));
+  // walking bass
+  let bn = ch.root; if (b === 1) bn = ch.root + (bar % 2 ? 7 : 3); if (b === 2) bn = ch.root + 7; if (b === 3) bn = (bar % 2 ? nextCh.root : ch.root + 12) + (bar % 2 ? (Math.random() < .5 ? 1 : -1) : -2);
+  bass(bn, t);
+  // brushes: swish on 2 and 4, swung ticks
+  if (b === 1 || b === 3) brush(t, .22, .05); hat(t, .018); hat(t + BEAT * .66, .012);
+  // sparse vibraphone
+  if (Math.random() < .3) vibes(ch.tones[Math.floor(Math.random() * ch.tones.length)] + 12, t + (Math.random() < .5 ? 0 : BEAT * .66));
+}
+function pad(m, t, dur) {
+  const g = AC.createGain(), f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; f.Q.value = .5;
+  [-7, 7].forEach(dt => { const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = mtof(m); o.detune.value = dt; o.connect(f); o.start(t); o.stop(t + dur + 2.5); });
+  f.connect(g); g.connect(musicBus); g.connect(verb);
+  g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.022, t + 1.6); g.gain.setValueAtTime(.022, t + dur - .3); g.gain.exponentialRampToValueAtTime(.0001, t + dur + 2.2);
+}
+function bass(m, t) {
+  const o = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter();
+  o.type = 'sine'; o2.type = 'triangle'; o.frequency.value = o2.frequency.value = mtof(m); f.type = 'lowpass'; f.frequency.value = 520;
+  o.connect(f); o2.connect(f); f.connect(g); g.connect(musicBus); env(g, t, .012, .32, BEAT * .95); o.start(t); o2.start(t); o.stop(t + BEAT * 1.1); o2.stop(t + BEAT * 1.1);
+}
+function brush(t, dur, vol) { const s = noiseSrc(t, dur), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'bandpass'; f.frequency.value = 5200; f.Q.value = .6; s.connect(f); f.connect(g); g.connect(musicBus); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(vol, t + dur * .4); g.gain.exponentialRampToValueAtTime(.0001, t + dur); }
+function hat(t, vol) { const s = noiseSrc(t, .05), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'highpass'; f.frequency.value = 7000; s.connect(f); f.connect(g); g.connect(musicBus); env(g, t, .002, vol, .04); }
+function vibes(m, t) {
+  const o = AC.createOscillator(), g = AC.createGain(), trem = AC.createOscillator(), tg = AC.createGain();
+  o.type = 'sine'; o.frequency.value = mtof(m); trem.frequency.value = 5.5; tg.gain.value = .35; trem.connect(tg);
+  const vca = AC.createGain(); vca.gain.value = .65; tg.connect(vca.gain);
+  o.connect(vca); vca.connect(g); g.connect(musicBus); g.connect(verb); env(g, t, .004, .07, 2.2);
+  o.start(t); trem.start(t); o.stop(t + 2.4); trem.stop(t + 2.4);
+}
+function startCrackle() {   // vinyl crackle + hiss, always under the music bus
+  const len = AC.sampleRate * 4, b = AC.createBuffer(1, len, AC.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * .012 + (Math.random() < .0009 ? (Math.random() * 2 - 1) * .5 : 0);
+  const s = AC.createBufferSource(); s.buffer = b; s.loop = true; const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 900;
+  const g = AC.createGain(); g.gain.value = .5; s.connect(f); f.connect(g); g.connect(musicBus); s.start();
+}
+function setMusicLevel() {
+  if (!AC) return; const t = AC.currentTime; const v = !musicOn ? 0 : ducked ? .5 : 1;
+  musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(v, t, .25);
+}
+const SFX = {
+  paper() { const t = now(), s = noiseSrc(t, .16), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'bandpass'; f.frequency.value = 1500 + Math.random() * 600; f.Q.value = .8; s.connect(f); f.connect(g); g.connect(sfxBus); env(g, t, .005, .32, .14);
+    const o = AC.createOscillator(), og = AC.createGain(); o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(70, t + .08); o.connect(og); og.connect(sfxBus); env(og, t, .003, .18, .09); o.start(t); o.stop(t + .12); },
+  slide() { const t0 = now();
+    for (let k = 0; k < 8; k++) { const t = t0 + k / 12 + Math.random() * .01, s = noiseSrc(t, .04), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'bandpass'; f.Q.value = 1.4; f.frequency.value = 2200 + Math.random() * 2200; s.connect(f); f.connect(g); g.connect(sfxBus); env(g, t, .002, .05 + Math.random() * .05, .035); }
+    const l = t0 + .66, o = AC.createOscillator(), og = AC.createGain(); o.frequency.setValueAtTime(150, l); o.frequency.exponentialRampToValueAtTime(70, l + .08); o.connect(og); og.connect(sfxBus); env(og, l, .003, .14, .09); o.start(l); o.stop(l + .12); },
+  stamp() { const t = now() + .16, o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(42, t + .18); o.connect(g); g.connect(sfxBus); env(g, t, .002, .95, .25); o.start(t); o.stop(t + .3);
+    const s = noiseSrc(t, .06), f = AC.createBiquadFilter(), ng = AC.createGain(); f.type = 'highpass'; f.frequency.value = 1500; s.connect(f); f.connect(ng); ng.connect(sfxBus); env(ng, t, .001, .45, .05);
+    if (NOW === null) later(() => { board.classList.remove('shake'); void board.offsetWidth; board.classList.add('shake'); }, 165); },
+  pin() { const t = now(), s = noiseSrc(t, .03), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'highpass'; f.frequency.value = 3200; s.connect(f); f.connect(g); g.connect(sfxBus); env(g, t, .001, .35, .025);
+    const o = AC.createOscillator(), og = AC.createGain(); o.frequency.value = 2100; o.connect(og); og.connect(sfxBus); env(og, t, .001, .06, .03); o.start(t); o.stop(t + .05); },
+  string() { const t = now(), s = noiseSrc(t, .5), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'bandpass'; f.Q.value = 3; f.frequency.setValueAtTime(700, t); f.frequency.exponentialRampToValueAtTime(2600, t + .45); s.connect(f); f.connect(g); g.connect(sfxBus); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.13, t + .1); g.gain.exponentialRampToValueAtTime(.0001, t + .5); },
+  type() { const t0 = now(); for (let i = 0; i < 9; i++) { const t = t0 + i * .07 + Math.random() * .02, s = noiseSrc(t, .03), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'bandpass'; f.frequency.value = 2400 + Math.random() * 1500; f.Q.value = 1.5; s.connect(f); f.connect(g); g.connect(sfxBus); env(g, t, .001, .3, .025); }
+    const t = t0 + .68, o = AC.createOscillator(), og = AC.createGain(); o.frequency.value = 2900; o.connect(og); og.connect(sfxBus); env(og, t, .001, .05, .25); o.start(t); o.stop(t + .3); },
+  whoosh() { const t = now(), s = noiseSrc(t, .5), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'bandpass'; f.Q.value = 1.2; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(1800, t + .2); f.frequency.exponentialRampToValueAtTime(400, t + .45); s.connect(f); f.connect(g); g.connect(sfxBus); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.35, t + .18); g.gain.exponentialRampToValueAtTime(.0001, t + .48); },
+  boom() { const t = now(), o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(30, t + 1.4); o.connect(g); g.connect(sfxBus); env(g, t, .01, .9, 1.6); o.start(t); o.stop(t + 1.8);
+    const s = noiseSrc(t, 1.2), f = AC.createBiquadFilter(), ng = AC.createGain(); f.type = 'lowpass'; f.frequency.value = 400; s.connect(f); f.connect(ng); ng.connect(sfxBus); env(ng, t, .01, .3, 1.1); },
+  none() {},
+};
+function sfx(name) { if (EXP) { if (name && name !== 'none' && SFX[name]) EXP.sfxLog.push({ t: EXP.t, name }); return; } if (!AC || !name || !SFX[name]) return; try { SFX[name](); } catch (e) {} }
+
+/* ---------- narration (speechSynthesis) ---------- */
+const synth = window.speechSynthesis || null;
+let voices = [], voice = null, rate = 1;
+const PREFERRED = [/natural/i, /online/i, /google uk english male/i, /daniel/i, /arthur/i, /ryan/i, /guy/i, /aaron/i, /alex/i, /google us english/i, /english/i];
+function loadVoices() {
+  if (!synth) return;
+  voices = synth.getVoices().filter(v => /^en/i.test(v.lang));
+  const sel = $('#voiceSel'); if (!voices.length) { sel.innerHTML = '<option>No English voice found</option>'; return; }
+  const score = v => { const i = PREFERRED.findIndex(r => r.test(v.name)); return (i < 0 ? 99 : i) + (v.localService ? 0 : -.5); };
+  voices.sort((a, b) => score(a) - score(b));
+  let saved = null; try { saved = localStorage.getItem('tokencase.voice'); } catch (e) {}
+  voice = voices.find(v => v.name === saved) || voices[0];
+  sel.innerHTML = voices.map((v, i) => `<option value="${i}" ${v === voice ? 'selected' : ''}>${v.name.replace(/Microsoft |Google /, '')} (${v.lang})</option>`).join('');
+}
+if (synth) { loadVoices(); synth.addEventListener?.('voiceschanged', loadVoices); }
+$('#voiceSel').addEventListener('change', e => { voice = voices[+e.target.value] || voice; try { localStorage.setItem('tokencase.voice', voice.name); } catch (er) {} });
+$('#rateSel').addEventListener('change', e => { rate = +e.target.value; });
+
+/* ---------- player ---------- */
+let sceneIdx = -1, layer = null, B = null, playing = false, paused = true, finished = false;
+let clock = 0, lastT = 0, words = [], wordStarts = [], cueQueue = [], fireQueue = [];
+let speechStartAt = null, boundaryIdx = -1, boundaryAt = 0, speechDone = false, doneAt = 0, spokeAny = false, utter = null, speakAt = 0;
+const WPS = 2.55;
+const norm = w => w.toLowerCase().replace(/[^a-z0-9'¾-]/g, '');
+
+function setHead(s, animate) {
+  const h = $('#head'); h.innerHTML = '';
+  const k = mk(`<div class="kicker">${s.kicker}</div>`, h), t = mk(`<div class="title">${s.title}</div>`, h);
+  k.style.cssText = '--r:-1deg;transform:rotate(-1deg)'; t.style.cssText = '--r:1deg;transform:rotate(1deg)'; torn(k, 2); torn(t, 3);
+  if (animate) { k.classList.add('in'); t.classList.add('in', 'from-r'); t.style.animationDelay = '.1s'; }
+}
+function renderCounter() { $('#counter').innerHTML = SCENES.map((_, i) => `<i class="${i < sceneIdx ? 'done' : i === sceneIdx ? 'cur' : ''}"></i>`).join(''); }
+// captions: phrase chunks, current word highlighted
+let capChunks = [];
+function buildCaptions(text) {
+  const ws = text.split(/\s+/); capChunks = []; let cur = [];
+  ws.forEach((w, i) => { cur.push(i); if (/[.?!:,]$/.test(w) && cur.length >= 3 || cur.length >= 7 || /[.?!]$/.test(w)) { capChunks.push(cur); cur = []; } });
+  if (cur.length) capChunks.push(cur);
+}
+let capShown = -2, capWord = -2;
+function renderCaption(idx) {
+  const ci = Math.max(0, capChunks.findIndex(c => c[c.length - 1] >= idx));
+  if (ci !== capShown) {
+    capShown = ci;
+    $('#cap').innerHTML = `<span class="line fresh">${capChunks[ci].map(i => `<span class="w" data-i="${i}">${words[i].replace(/\.\.\./g, '…')}</span>`).join(' ')}</span>`;
+    capWord = -2;
+  }
+  const wi = Math.floor(idx);
+  if (wi !== capWord) { capWord = wi; $('#cap').querySelectorAll('.w').forEach(e => e.classList.toggle('now', +e.dataset.i === wi)); }
+}
+
+function loadScene(i, opts = {}) {
+  sceneIdx = i; const s = SCENES[i];
+  const old = layer;
+  layer = mk('<div class="layer"></div>', board); board.insertBefore(layer, old || board.querySelector('.board-glare'));
+  if (old) { old.classList.remove('enter'); old.classList.add('out'); later(() => old.remove(), 480); }
+  if (!opts.poster) layer.classList.add('enter');
+  seed = 101 + i * 31;
+  B = Builder(layer); s.build(B); B.aimSlides();
+  const moves = [['-14px', '-6px', 1.06, '40% 40%'], ['12px', '-8px', 1.055, '60% 45%'], ['-10px', '6px', 1.05, '45% 60%'], ['10px', '4px', 1.06, '55% 50%']][i % 4];
+  B.cam.style.setProperty('--kx', moves[0]); B.cam.style.setProperty('--ky', moves[1]); B.cam.style.setProperty('--ks', moves[2]); B.cam.style.setProperty('--ko', moves[3]);
+  if (opts.poster) { B.cam.style.animation = 'none'; }
+  else { B.cam.style.animationDuration = Math.max(8, s.say.split(/\s+/).length / WPS + 4) + 's'; }
+  words = s.say.split(/\s+/); wordStarts = []; let p = 0; words.forEach(w => { const k = s.say.indexOf(w, p); wordStarts.push(k); p = k + w.length; });
+  // resolve cue keys to word indexes / times
+  let from = 0; cueQueue = B.cues.map(c => {
+    if (c.key.startsWith('@')) return { ...c, t: parseFloat(c.key.slice(1)) };
+    const key = c.key.toLowerCase(), pre = key.endsWith('*'), k = norm(key.replace('*', ''));
+    let idx = words.findIndex((w, j) => j >= from && (pre ? norm(w).startsWith(k) : norm(w) === k));
+    if (idx < 0) idx = from; from = idx + 1; return { ...c, w: idx };
+  });
+  fireQueue = []; buildCaptions(s.say); capShown = -2;
+  setHead(s, !opts.poster); renderCounter();
+  if (opts.poster) { cueQueue.forEach(c => c.items.forEach(reveal)); cueQueue = []; renderCaption(words.length - 1); return; }
+  clock = 0; speechStartAt = null; boundaryIdx = -1; speechDone = false; doneAt = 0; spokeAny = false;
+  sfx('whoosh');
+  speak(s.say);
+}
+const FPS = 12, smAnims = new Set();
+// stop-motion: the clipping is moved by hand one held frame at a time, lifted while it travels, pressed flat on landing
+function stopMotionIn(e) {
+  if (reduced || !e.animate) return;
+  const fx = parseFloat(e.style.getPropertyValue('--fx')) || 0, fy = parseFloat(e.style.getPropertyValue('--fy')) || 0, fr = parseFloat(e.style.getPropertyValue('--fr')) || 0;
+  const n = 8 + Math.floor(Math.random() * 3), rest = getComputedStyle(e).filter, lifted = 'drop-shadow(7px 16px 9px rgba(0,0,0,.42))';
+  const kf = [];
+  for (let k = 0; k <= n; k++) {
+    const p = k / n, ease = 1 - Math.pow(1 - Math.min(1, p * 1.1), 2.2), wob = k < n ? (1 - p * .7) : 0;
+    const x = fx * (1 - ease) + (Math.random() * 6 - 3) * wob, y = fy * (1 - ease) + (Math.random() * 6 - 3) * wob;
+    const rot = fr * (1 - ease) + (Math.random() * 3 - 1.5) * wob;
+    const sc = k < n - 1 ? 1.045 : k === n - 1 ? 1.015 : 1;
+    kf.push({ offset: p, translate: `${x.toFixed(1)}px ${y.toFixed(1)}px`, rotate: `${rot.toFixed(2)}deg`, scale: sc, filter: k < n - 1 ? lifted : rest, easing: 'steps(1, end)' });
+  }
+  const a = e.animate(kf, { duration: n * 1000 / FPS, fill: 'backwards' });
+  smAnims.add(a); if (playing && paused) a.pause();
+  a.onfinish = () => { smAnims.delete(a); e.classList.add('boil'); e.style.animationDelay = (-Math.random()).toFixed(2) + 's'; };
+}
+function reveal(el, withSfx) { if (!el.classList) return; el.classList.remove('pre'); el.classList.add('in'); if (el.classList.contains('a-slide')) stopMotionIn(el); if (withSfx) sfx(el.dataset.sfx); }
+function fireCue(c) { c.items.forEach((el, k) => fireQueue.push({ at: clock + k * c.stagger, el, snd: k === 0 || el.dataset.sfx === 'stamp' || el.dataset.sfx === 'string' })); }
+
+function speak(text) {
+  speakAt = clock;
+  if (EXP) { const n = EXP.narration[sceneIdx]; speechStartAt = clock + n.lead; EXP.speech.push({ scene: sceneIdx, start: EXP.t + n.lead, end: EXP.t + n.lead + n.dur }); return; }
+  if (!synth || !voices.length) { $('#status').textContent = 'No browser voice available. Playing with captions only.'; return; }
+  synth.cancel();
+  const my = utter = new SpeechSynthesisUtterance(text);
+  if (voice) { utter.voice = voice; utter.lang = voice.lang; } utter.rate = rate; utter.pitch = .92;
+  utter.onstart = () => { if (utter !== my) return; speechStartAt = clock; spokeAny = true; ducked = true; setMusicLevel(); };
+  utter.onboundary = e => { if (utter !== my) return; if (e.name && e.name !== 'word') return; let wi = 0; while (wi + 1 < wordStarts.length && wordStarts[wi + 1] <= e.charIndex) wi++; boundaryIdx = wi; boundaryAt = clock; spokeAny = true; };
+  utter.onend = utter.onerror = () => { if (utter === my && !speechDone) { speechDone = true; doneAt = clock; ducked = false; setMusicLevel(); } };
+  synth.speak(utter);
+}
+function wordIndexNow() {
+  if (EXP) { const n = EXP.narration[sceneIdx], e = clock - speechStartAt; if (e < 0) return -1; let i = 0; while (i + 1 < n.times.length && n.times[i + 1] <= e) i++; return i; }
+  const start = speechStartAt ?? (clock - speakAt > .7 ? speakAt + .7 : null);
+  if (start === null) return -1;
+  const est = (clock - start) * WPS * rate;
+  if (boundaryIdx >= 0) return Math.min(boundaryIdx + Math.min((clock - boundaryAt) * WPS * rate, .95), words.length - 1);
+  return Math.min(est, words.length - 1);
+}
+function tick(now) {
+  const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
+  if (!EXP) { drawDust(); update(dt); }
+  requestAnimationFrame(tick);
+}
+function update(dt) {
+  if (playing && !paused && sceneIdx >= 0) {
+    clock += dt;
+    const wi = wordIndexNow();
+    const noVoice = !synth || !voices.length;
+    if (EXP && !speechDone && speechStartAt !== null && clock - speechStartAt >= EXP.narration[sceneIdx].dur) { speechDone = true; doneAt = clock; }
+    if (!EXP && !speechDone && (noVoice || !spokeAny) && wi >= words.length - 1 && clock - speakAt > words.length / (WPS * rate) + .6) { speechDone = true; doneAt = clock; }
+    if (!EXP && !speechDone && clock - speakAt > words.length / (WPS * rate) * 1.9 + 4) { speechDone = true; doneAt = clock; if (synth) synth.cancel(); }
+    const eff = speechDone ? words.length : wi;
+    cueQueue = cueQueue.filter(c => { const ok = c.t !== undefined ? clock >= c.t : eff >= c.w - .15; if (ok) fireCue(c); return !ok; });
+    fireQueue = fireQueue.filter(f => { if (clock >= f.at) { reveal(f.el, f.snd); return false; } return true; });
+    if (capOn) renderCaption(speechDone ? words.length - 1 : Math.max(0, wi));
+    if (speechDone && !cueQueue.length && !fireQueue.length && clock - doneAt > .9) next();
+  }
+}
+function next() {
+  if (sceneIdx + 1 < SCENES.length) { loadScene(sceneIdx + 1); return; }
+  playing = false; paused = true; finished = true; stage.classList.add('paused'); sfx('boom');
+  later(() => { stopMusic(); if (AC && finished) musicBus.gain.setTargetAtTime(0, AC.currentTime, .6); }, 2600);
+  if (EXP) { EXP.done = true; EXP.endT = EXP.t; return; }
+  $('#endOv').hidden = false; $('#playBtn').textContent = '▶ Play'; sceneIdx = SCENES.length - 1; renderCounter();
+}
+function start() {
+  if (!EXP) { initAudio(); AC.resume(); }
+  $('#startOv').hidden = true; $('#endOv').hidden = true;
+  playing = true; paused = false; finished = false; stage.classList.remove('paused');
+  $('#playBtn').textContent = '❚❚ Pause';
+  if (synth) synth.cancel();
+  if (!EXP) startMusic(); sfx('boom');
+  if (layer) { layer.remove(); layer = null; }
+  loadScene(0);
+}
+function togglePause() {
+  if (!playing) { start(); return; }
+  paused = !paused; stage.classList.toggle('paused', paused);
+  $('#playBtn').textContent = paused ? '▶ Resume' : '❚❚ Pause';
+  if (synth) paused ? synth.pause() : synth.resume();
+  if (AC) paused ? AC.suspend() : AC.resume();
+  smAnims.forEach(a => paused ? a.pause() : (a.playState === 'paused' && a.play()));
+}
+$('#startBtn').addEventListener('click', start);
+$('#replayBtn').addEventListener('click', start);
+$('#restartBtn').addEventListener('click', start);
+$('#playBtn').addEventListener('click', togglePause);
+$('#musicBtn').addEventListener('click', e => { musicOn = !musicOn; e.target.setAttribute('aria-pressed', musicOn); setMusicLevel(); });
+let capOn = true;
+$('#capBtn').addEventListener('click', e => { capOn = !capOn; e.target.setAttribute('aria-pressed', capOn); $('#cap').classList.toggle('off', !capOn); });
+addEventListener('keydown', e => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); togglePause(); } });
+
+/* poster frame: scene 1 fully assembled behind the start button */
+fit(); { const m = /^#scene(\d)$/.exec(location.hash); loadScene(m ? Math.min(8, Math.max(0, m[1] - 1)) : 0, { poster: true }); } stage.classList.add('paused'); stage.classList.remove('paused');
+requestAnimationFrame(t => { lastT = t; tick(t); });
+document.fonts && document.fonts.ready.then(fit);
+
+/* ---------- export hooks (used only by export.js) ---------- */
+if (EXP) {
+  EXP.says = SCENES.map(s => s.say);
+  const seen = new WeakMap();
+  EXP.begin = () => start();
+  EXP.step = dt => {
+    EXP.t += dt;
+    EXP.timers = EXP.timers.filter(x => { if (EXP.t >= x.at) { x.fn(); return false; } return true; });
+    if (playing && sceneIdx >= 0) update(dt);
+    drawDust();
+    for (const a of document.getAnimations()) {          // pin every CSS + WAAPI animation to the virtual clock
+      if (!seen.has(a)) { seen.set(a, EXP.t); a.pause(); }
+      const ct = (EXP.t - seen.get(a)) * 1000; a.currentTime = ct;
+      const end = a.effect ? a.effect.getComputedTiming().endTime : Infinity;
+      if (a.onfinish && isFinite(end) && ct >= end && !a.__fin) { a.__fin = true; a.onfinish(); }
+    }
+    return EXP.done;
+  };
+  // music + sfx rendered offline to a 16-bit stereo WAV (bytes kept in EXP.wav)
+  EXP.renderAudio = async (dur) => {
+    const sr = 44100, ctx = new OfflineAudioContext(2, Math.ceil(dur * sr), sr);
+    initAudio(ctx);
+    const g = musicBus.gain; g.setValueAtTime(1, 0);
+    for (const s of EXP.speech) { g.setTargetAtTime(.5, s.start, .25); g.setTargetAtTime(1, s.end, .25); }
+    g.setTargetAtTime(0, (EXP.endT || dur) + 2.6, .6);
+    for (let n = 0, t = .15; t < (EXP.endT || dur) + 2.6; n++, t += BEAT) playBeat(n, t);
+    for (const e of EXP.sfxLog) { NOW = e.t; try { SFX[e.name](); } catch (er) {} }
+    NOW = null;
+    const buf = await ctx.startRendering(), L = buf.getChannelData(0), Rr = buf.getChannelData(1), n = L.length;
+    const out = new DataView(new ArrayBuffer(44 + n * 4)); const w = (o, str) => [...str].forEach((c, i) => out.setUint8(o + i, c.charCodeAt(0)));
+    w(0, 'RIFF'); out.setUint32(4, 36 + n * 4, true); w(8, 'WAVEfmt '); out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 2, true);
+    out.setUint32(24, sr, true); out.setUint32(28, sr * 4, true); out.setUint16(32, 4, true); out.setUint16(34, 16, true); w(36, 'data'); out.setUint32(40, n * 4, true);
+    for (let i = 0; i < n; i++) { out.setInt16(44 + i * 4, Math.max(-1, Math.min(1, L[i])) * 32767, true); out.setInt16(46 + i * 4, Math.max(-1, Math.min(1, Rr[i])) * 32767, true); }
+    EXP.wav = new Uint8Array(out.buffer); return EXP.wav.length;
+  };
+  EXP.wavChunk = (i, size) => { let s = ''; const b = EXP.wav.subarray(i, i + size); for (let k = 0; k < b.length; k += 32768) s += String.fromCharCode.apply(null, b.subarray(k, k + 32768)); return btoa(s); };
+}
+})();
+</script>

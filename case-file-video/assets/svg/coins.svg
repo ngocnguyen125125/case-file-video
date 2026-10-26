@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" width="260" height="260">
+  <defs>
+    <linearGradient id="edge" x1="0" x2="1"><stop offset="0" stop-color="#3a3a3a"/><stop offset=".3" stop-color="#d0d0d0"/><stop offset=".6" stop-color="#8a8a8a"/><stop offset="1" stop-color="#2a2a2a"/></linearGradient>
+    <radialGradient id="face" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#fafafa"/><stop offset=".6" stop-color="#a5a5a5"/><stop offset="1" stop-color="#555"/></radialGradient>
+  </defs>
+  <g id="stack1">
+    <rect x="20" y="120" width="120" height="110" fill="url(#edge)"/>
+    <g stroke="#333" stroke-width="1.5" opacity=".7">
+      <path d="M20 132h120M20 144h120M20 156h120M20 168h120M20 180h120M20 192h120M20 204h120M20 216h120"/>
+    </g>
+    <ellipse cx="80" cy="230" rx="60" ry="16" fill="url(#edge)"/>
+    <ellipse cx="80" cy="120" rx="60" ry="16" fill="url(#face)" stroke="#333" stroke-width="2"/>
+    <ellipse cx="80" cy="120" rx="44" ry="11" fill="none" stroke="#555" stroke-width="2"/>
+  </g>
+  <rect x="130" y="170" width="110" height="62" fill="url(#edge)"/>
+  <g stroke="#333" stroke-width="1.5" opacity=".7"><path d="M130 182h110M130 194h110M130 206h110M130 218h110"/></g>
+  <ellipse cx="185" cy="232" rx="55" ry="15" fill="url(#edge)"/>
+  <ellipse cx="185" cy="170" rx="55" ry="15" fill="url(#face)" stroke="#333" stroke-width="2"/>
+  <text x="185" y="176" text-anchor="middle" font-family="Georgia" font-weight="bold" font-size="20" fill="#333">$</text>
+  <!-- leaning coin -->
+  <ellipse cx="190" cy="80" rx="48" ry="52" fill="url(#face)" stroke="#333" stroke-width="3" transform="rotate(-18 190 80)"/>
+  <ellipse cx="190" cy="80" rx="36" ry="40" fill="none" stroke="#444" stroke-width="2" transform="rotate(-18 190 80)"/>
+  <text x="190" y="96" text-anchor="middle" font-family="Georgia" font-weight="bold" font-size="46" fill="#333" transform="rotate(-18 190 80)">$</text>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 340" width="220" height="340">
+  <defs>
+    <linearGradient id="body" x1="0" x2="1"><stop offset="0" stop-color="#4a4a4a"/><stop offset=".25" stop-color="#bdbdbd"/><stop offset=".7" stop-color="#8f8f8f"/><stop offset="1" stop-color="#3a3a3a"/></linearGradient>
+    <linearGradient id="drawer" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6d6d6"/><stop offset="1" stop-color="#7a7a7a"/></linearGradient>
+    <linearGradient id="handle" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#444"/></linearGradient>
+  </defs>
+  <rect x="20" y="10" width="180" height="320" rx="4" fill="url(#body)" stroke="#1e1e1e" stroke-width="3"/>
+  <g>
+    <rect x="34" y="26" width="152" height="88" fill="url(#drawer)" stroke="#2a2a2a" stroke-width="2.5"/>
+    <rect x="34" y="126" width="152" height="88" fill="url(#drawer)" stroke="#2a2a2a" stroke-width="2.5"/>
+    <rect x="34" y="226" width="152" height="88" fill="url(#drawer)" stroke="#2a2a2a" stroke-width="2.5"/>
+  </g>
+  <g fill="#f4f4f4" stroke="#333" stroke-width="2">
+    <rect x="88" y="40" width="44" height="18"/><rect x="88" y="140" width="44" height="18"/><rect x="88" y="240" width="44" height="18"/>
+  </g>
+  <g fill="url(#handle)" stroke="#222" stroke-width="2">
+    <rect x="80" y="72" width="60" height="14" rx="6"/><rect x="80" y="172" width="60" height="14" rx="6"/><rect x="80" y="272" width="60" height="14" rx="6"/>
+  </g>
+  <!-- papers sticking out of top drawer -->
+  <path d="M60 26 l6 -18 h50 l-4 18z" fill="#eee" stroke="#333" stroke-width="1.5"/>
+  <path d="M110 26 l10 -14 h44 l-6 14z" fill="#ddd" stroke="#333" stroke-width="1.5"/>
+</svg>

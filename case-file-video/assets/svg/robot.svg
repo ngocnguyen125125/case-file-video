@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 620" width="300" height="620">
+  <defs>
+    <linearGradient id="coat" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#3a3a3a"/><stop offset=".35" stop-color="#8a8a8a"/><stop offset=".6" stop-color="#6e6e6e"/><stop offset="1" stop-color="#2a2a2a"/>
+    </linearGradient>
+    <linearGradient id="coatV" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" x2="1">
+      <stop offset="0" stop-color="#5a5a5a"/><stop offset=".3" stop-color="#e6e6e6"/><stop offset=".55" stop-color="#b0b0b0"/><stop offset="1" stop-color="#3c3c3c"/>
+    </linearGradient>
+    <linearGradient id="hat" x1="0" x2="1">
+      <stop offset="0" stop-color="#1a1a1a"/><stop offset=".4" stop-color="#5a5a5a"/><stop offset="1" stop-color="#151515"/>
+    </linearGradient>
+    <radialGradient id="eye" cx=".4" cy=".4" r=".7">
+      <stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#bbb"/><stop offset="1" stop-color="#333"/>
+    </radialGradient>
+  </defs>
+  <!-- legs -->
+  <rect x="112" y="500" width="26" height="80" fill="url(#metal)"/>
+  <rect x="162" y="500" width="26" height="80" fill="url(#metal)"/>
+  <g fill="#666"><rect x="112" y="520" width="26" height="4"/><rect x="112" y="545" width="26" height="4"/><rect x="162" y="520" width="26" height="4"/><rect x="162" y="545" width="26" height="4"/></g>
+  <!-- shoes -->
+  <path d="M100 578 h44 q8 0 8 10 v10 h-62 q-4 -20 10 -20z" fill="#111"/>
+  <path d="M156 578 h44 q14 0 14 20 h-62 v-10 q0 -10 4 -10z" fill="#111"/>
+  <!-- coat body -->
+  <path d="M70 175 Q150 150 230 175 L250 330 L262 515 Q150 535 38 515 L50 330 Z" fill="url(#coat)"/>
+  <path d="M70 175 Q150 150 230 175 L250 330 L262 515 Q150 535 38 515 L50 330 Z" fill="url(#coatV)"/>
+  <!-- coat opening / lapels -->
+  <path d="M150 180 L118 175 L132 260 L150 300 Z" fill="#9a9a9a"/>
+  <path d="M150 180 L182 175 L168 260 L150 300 Z" fill="#4a4a4a"/>
+  <path d="M150 300 L150 520" stroke="#1e1e1e" stroke-width="3"/>
+  <path d="M150 300 L160 520" stroke="#555" stroke-width="2"/>
+  <!-- shirt / tie triangle -->
+  <path d="M138 178 L162 178 L150 255 Z" fill="#ddd"/>
+  <path d="M146 182 L154 182 L157 240 L150 252 L143 240 Z" fill="#222"/>
+  <!-- belt -->
+  <rect x="48" y="340" width="204" height="22" fill="#2b2b2b"/>
+  <rect x="135" y="336" width="30" height="30" fill="none" stroke="#bbb" stroke-width="4"/>
+  <path d="M60 362 l-8 60 l10 0 z" fill="#2b2b2b"/>
+  <!-- buttons -->
+  <g fill="#1a1a1a"><circle cx="170" cy="295" r="5"/><circle cx="170" cy="400" r="5"/><circle cx="170" cy="450" r="5"/><circle cx="128" cy="295" r="5"/><circle cx="128" cy="400" r="5"/></g>
+  <!-- pockets -->
+  <path d="M70 410 l50 -6" stroke="#222" stroke-width="3"/><path d="M182 404 l50 6" stroke="#222" stroke-width="3"/>
+  <!-- arms -->
+  <path d="M70 178 Q40 190 34 260 L22 420 Q36 432 56 424 L66 300 Z" fill="url(#coat)"/>
+  <path d="M230 178 Q262 190 268 260 L280 420 Q266 432 246 424 L236 300 Z" fill="url(#coat)"/>
+  <!-- metal hands -->
+  <g fill="url(#metal)"><rect x="24" y="420" width="30" height="34" rx="8"/><rect x="248" y="420" width="30" height="34" rx="8"/></g>
+  <g stroke="#333" stroke-width="2"><path d="M32 440 v14 M40 440 v14 M48 440 v14"/><path d="M256 440 v14 M264 440 v14 M272 440 v14"/></g>
+  <!-- collar up -->
+  <path d="M92 172 L112 128 L122 180 Z" fill="#7a7a7a"/><path d="M208 172 L188 128 L178 180 Z" fill="#4c4c4c"/>
+  <!-- neck -->
+  <rect x="134" y="138" width="32" height="30" fill="url(#metal)"/>
+  <g stroke="#555" stroke-width="2"><path d="M134 146 h32 M134 154 h32 M134 162 h32"/></g>
+  <!-- head -->
+  <rect x="96" y="58" width="108" height="88" rx="14" fill="url(#metal)"/>
+  <rect x="96" y="58" width="108" height="88" rx="14" fill="none" stroke="#2a2a2a" stroke-width="3"/>
+  <circle cx="128" cy="96" r="14" fill="url(#eye)" stroke="#222" stroke-width="3"/>
+  <circle cx="172" cy="96" r="14" fill="url(#eye)" stroke="#222" stroke-width="3"/>
+  <rect x="120" y="120" width="60" height="16" rx="3" fill="#2a2a2a"/>
+  <g stroke="#9a9a9a" stroke-width="2"><path d="M130 121 v14 M140 121 v14 M150 121 v14 M160 121 v14 M170 121 v14"/></g>
+  <g fill="#444"><circle cx="104" cy="66" r="3"/><circle cx="196" cy="66" r="3"/><circle cx="104" cy="138" r="3"/><circle cx="196" cy="138" r="3"/></g>
+  <!-- ear bolts -->
+  <rect x="86" y="86" width="12" height="24" rx="3" fill="url(#metal)" stroke="#333" stroke-width="2"/>
+  <rect x="202" y="86" width="12" height="24" rx="3" fill="url(#metal)" stroke="#333" stroke-width="2"/>
+  <!-- fedora -->
+  <ellipse cx="150" cy="66" rx="92" ry="16" fill="#111"/>
+  <path d="M96 66 Q98 14 150 12 Q202 14 204 66 Z" fill="url(#hat)"/>
+  <path d="M128 18 Q150 34 172 18" stroke="#000" stroke-width="4" fill="none"/>
+  <rect x="97" y="48" width="106" height="13" fill="#0a0a0a"/>
+  <ellipse cx="150" cy="62" rx="92" ry="10" fill="none" stroke="#444" stroke-width="2"/>
+</svg>
