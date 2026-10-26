@@ -2,7 +2,7 @@
 
 ## Coordinates and layers
 - The stage is 720x1280 units (exported at 1.5x = 1080x1920). The board is a cork board at stage y 437–842, so scene code uses **board units: 720 x 405**, origin at the board's top-left.
-- Above the board: kicker + yellow title (`kicker`, `title`). Below it: karaoke captions from `say`. Bottom: scene counter + series line.
+- Above the board: kicker + yellow title (`kicker`, `title`). Below it: karaoke captions from `say`. Bottom: series line (no progress bar).
 - Inside a scene: `layer > .zoom (punch-ins) > .cam (Ken Burns drift) > pieces`. z-index guide: base papers 1, props 20–35, yellow labels 40, tape 60, highlights 65, stamps 70, strings 78, pins 80, markers 85.
 - Platform safe zone: keep key text out of board x > 620, y > 260 (TikTok/Reels buttons).
 

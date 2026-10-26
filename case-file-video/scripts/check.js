@@ -30,7 +30,7 @@ const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Sp
     await p.click('#startBtn'); const stage = await p.$('#stage');
     for (let i = 0; i < 60; i++) {
       await p.waitForTimeout(2900);
-      const sc = await p.evaluate(() => [...document.querySelectorAll('#counter i')].findIndex(e => e.classList.contains('cur')));
+      const sc = await p.evaluate(() => +document.querySelector('#stage').dataset.scene);
       await stage.screenshot({ path: path.join(out, `t${String(i).padStart(2, '0')}_s${sc}.png`) });
       if (await p.evaluate(() => !document.querySelector('#endOv').hidden)) { console.log('reached end card at frame', i); break; }
     }

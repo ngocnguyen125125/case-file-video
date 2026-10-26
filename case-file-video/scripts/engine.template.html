@@ -147,9 +147,6 @@ svg.strings path{stroke:var(--evidence);stroke-width:2.3;fill:none;filter:url(#s
 
 .caption .w.now{background:var(--evidence);color:#fff;box-shadow:0 0 0 3px var(--evidence)}
 .caption.off{display:none}
-.counter{position:absolute;left:0;right:0;top:1150px;display:flex;justify-content:center;gap:8px;z-index:6}
-.counter i{width:22px;height:6px;background:#3a2c20;display:block;transform:skewX(-20deg)}
-.counter i.done{background:#8a6a44}.counter i.cur{background:var(--tape)}
 .handle{position:absolute;left:0;right:0;top:1190px;text-align:center;font-family:var(--f-type);font-size:15px;color:#8f7c61;letter-spacing:2px;z-index:6}
 
 /* start + end overlay */
@@ -183,13 +180,12 @@ html.exporting .stage{border-radius:0;box-shadow:none}html.exporting .overlay{di
       <div class="head" id="head"></div>
       <div class="board" id="board"><div class="board-glare"></div></div>
       <div class="caption" id="cap"></div>
-      <div class="counter" id="counter"></div>
       <!-- TOPIC: series / channel line -->
       <div class="handle">CASE FILES · AI EXPLAINED</div>
       <div class="overlay" id="startOv">
         <button class="big-btn" id="startBtn" type="button">▶ Open the case</button>
         <!-- TOPIC: start note -->
-        <p>About 60 seconds, with sound. The narrator is your browser's built-in voice and the music is generated live.</p>
+        <p id="startNote">About 60 seconds, with sound. The narrator is your browser's built-in voice and the music is generated live.</p>
       </div>
       <div class="overlay" id="endOv" hidden>
         <button class="big-btn" id="replayBtn" type="button">↺ Replay the case</button>
@@ -847,6 +843,7 @@ function loadVoices() {
   $('#rateSel').disabled = useBaked;
 }
 loadVoices(); if (synth) synth.addEventListener?.('voiceschanged', loadVoices);
+if (BAKED) { const n = $('#startNote'); if (n) n.textContent = n.textContent.replace("your browser's built-in voice", 'a neural voice'); }
 $('#voiceSel').addEventListener('change', e => {
   const v = e.target.value;
   if (v === 'b') useBaked = true;
@@ -869,7 +866,7 @@ function setHead(s, animate) {
   k.style.cssText = '--r:-1deg;transform:rotate(-1deg)'; t.style.cssText = '--r:1deg;transform:rotate(1deg)'; torn(k, 2); torn(t, 3);
   if (animate) { k.classList.add('in'); t.classList.add('in', 'from-r'); t.style.animationDelay = '.1s'; }
 }
-function renderCounter() { $('#counter').innerHTML = SCENES.map((_, i) => `<i class="${i < sceneIdx ? 'done' : i === sceneIdx ? 'cur' : ''}"></i>`).join(''); }
+function renderCounter() { stage.dataset.scene = sceneIdx; }   // no on-screen progress bar; QA (check.js) reads the current scene from #stage[data-scene]
 // captions: phrase chunks, current word highlighted
 let capChunks = [];
 function buildCaptions(text) {
