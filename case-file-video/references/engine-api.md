@@ -18,7 +18,7 @@
 ## Builder `B`
 | Call | Purpose |
 |---|---|
-| `B.piece({x,y,w,h,rot,cls,html,style,z,anim,sfx,tornJ,shadow})` | Any paper piece. `cls`: `paper`, `manila` (base sheets; area ≥ 90,000 appears instantly), `card`, `chip`, `strip`, `yellow`, `news`, `ph`. `anim`: `slide` (default stop-motion), `wipe`, `drop`, `fade`, `hop`, `base`. `tornJ` = edge roughness (0 = none). |
+| `B.piece({x,y,w,h,rot,cls,html,style,z,anim,sfx,tornJ,shadow})` | Any paper piece. `cls`: `paper`, `manila` (base sheets; area ≥ 90,000 appears instantly), `card`, `chip`, `strip`, `yellow`, `news`, `ph`. `anim`: `slide` (default stop-motion), `wipe`, `drop`, `fade`, `hop`, `spin` (spinning newspaper), `print` (receipt prints top-down), `base` (instant). `tornJ` = edge roughness (0 = none). |
 | `B.news(x,y,w,h,rot)` | Newspaper clipping with a generated headline + columns |
 | `B.sticker(name,x,y,h,rot,z)` | Photo cutout from `stickers.js` |
 | `B.stamp(text,x,y,size,rot,{round:px, style})` | Red rubber stamp (slams + jolt) |
@@ -27,6 +27,10 @@
 | `B.marker(kind, params, {color,width})` | Red marker draw-on: `circle {cx,cy,rx,ry}`, `underline {x1,x2,y}`, `arrow {x1,y1,x2,y2}`, `cross {x,y,w,h}`, `path {d}` |
 | `B.highlight(x,y,w,h,rot)` | Yellow highlighter swipe |
 | `B.punch(x,y,scale,hold)` | Returns a cue item that punches the camera in on a point |
+| `B.move(el, dx, dy, {frames, rot, delay, sound})` | Cue item: stop-motion move of an already placed piece (split apart, regroup, slide aside) |
+| `B.shake(el, {deg, px, dur})` | Cue item: rattle a piece (dice roll) |
+| `B.flash()` | Cue item: white camera flash over the board + shutter sound |
+| `B.flashlight(pts, {r})` → `{el, off}` | Dark board with a searching beam; `pts = [[t,x,y],…]` in scene seconds and board units. Reveal `el` at `'@0'`, cue `off` to switch the lights on |
 | `B.placeholder({x,y,w,h,label,rot,z})` | "ASSET NEEDED" card for the storyboard; swap it for the real asset later |
 | `B.el(html, anim, sfx)` | Raw element (censor bars, cut lines, custom overlays). The element starts hidden until its cue. |
 | `B.onFrame(fn(sceneClock, dt))` | Per-frame JS for custom effects (export-safe) |
@@ -42,4 +46,5 @@
 2. Never use `setTimeout`/`setInterval` for visuals; use `later(fn, ms)`.
 3. New sounds: add to `SFX` using `now()` for the start time and connect to `sfxBus`; trigger with `sfx('name')`. The exporter logs and re-renders them offline.
 4. No live `<video>`: draw extracted frames on a canvas in `B.onFrame`.
-5. New CSS entrance: add `.in.a-myname{animation:myname .5s steps(6,end) both}` and use `anim:'myname'`.
+5. Camera cue functions (like `B.punch`) carry `camera: true` and are skipped in poster/storyboard frames; mark your own camera moves the same way (`Object.assign(fn, {camera: true})`).
+6. New CSS entrance: add `.in.a-myname{animation:myname .5s steps(6,end) both}` and use `anim:'myname'`.

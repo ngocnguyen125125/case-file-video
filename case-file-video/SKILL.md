@@ -93,6 +93,7 @@ Then process what arrives:
 2. **Scenes.** Follow `references/engine-api.md`. Built-in helpers:
    - `B.piece`, `B.news`, `B.sticker`, `B.stamp`, `B.pin` + `B.string`, `B.tape`
    - `B.marker` (circle, underline, arrow, cross), `B.highlight`, `B.punch` (camera punch-in)
+   - `B.move` (stop-motion move/split), `B.shake` (rattle), `B.flash` (camera flash), `B.flashlight` (dark board + searching beam); `anim: 'spin'` (spinning newspaper), `anim: 'print'` (receipt printing)
    - `B.placeholder`, `B.onFrame`, and function cue items for custom moments
    
    Build new effects from the recipes in `references/effects.md`. Tune the film look with `LOOK = {grain, flicker, scratches, weave}`. Edit the `TOPIC:` markers (page title, series line, start note, end-card line).

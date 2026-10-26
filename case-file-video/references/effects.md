@@ -12,17 +12,19 @@ Stop-motion rule of thumb: step motion at 12 fps (`steps(n,end)` in CSS, or held
 | Stamp slam (3 frames + board jolt) | Built in | `B.stamp(...)` |
 | Pin pop + string draw | Built in | `B.pin`, `B.string` |
 | Hop into a slot | Built in | `anim:'hop'` with `--dx/--dy` |
-| Drop from above with bounce | Recipe | `anim:'drop'` (keyframes exist); add a dust-puff div fading at landing |
+| Drop from above (stepped) | Built in | `anim:'drop'`, or on a sticker `el.classList.replace('a-slide','a-drop')` |
 | Slap-down | Recipe | 2-frame scale 1.15→1 + `board.shake` + low thud SFX + 4 small grey specks flying out (`element.animate`) |
 | Unfold (folded note or map) | Recipe | two halves; animate the top half `transform: perspective(600px) rotateX(-180deg→0)` in 5 steps, with a crease shadow gradient |
 | Corner peel | Recipe | small triangle div with a gradient (paper back) scaling 0→1 at a corner, then back; or `clip-path` polygon steps |
 | Out of a folder or envelope | Recipe | folder front piece at a higher z-index; slide the photo up from behind it (stepped), then the folder slides away |
 | Polaroid develop | Recipe | white frame + photo with `filter: brightness(3) contrast(.3) sepia(1)` animating to normal over 2 s in 8 steps |
-| Flash pop | Recipe | full-board white div opacity 1→0 in 3 frames + `sfx('shutter')`; the photo appears on frame 1 |
+| Flash pop | Built in | cue `[B.flash(), photo]` with `photo.classList.replace('a-slide','a-base')` so it appears on the flash frame |
 | Scissor-cut reveal | Recipe | `B.marker('path', {d})` dashed outline around the photo, then the photo lifts (scale 1.04 + bigger shadow) and slides; snip SFX |
 | Hand placement | Needs: photo of a hand holding/pinching (transparent PNG) | hand sticker slides in with the piece (same stepped keyframes, slightly delayed), then leaves the way it came |
-| Spin-in (spinning newspaper) | Recipe | `rotate: 720deg→0, scale .1→1` over 1 s, 12 fps steps, then a hard settle; classic for headlines |
-| Ransom-note title assembling | Recipe | one chip per letter/word, each its own cue item with `stagger: .06` |
+| Spin-in (spinning newspaper) | Built in | `anim:'spin'` on any piece (e.g. a `news` piece with an Anton headline) |
+| Ransom-note title assembling | Recipe (easy) | one `chip` per letter (single letters get ransom fonts), cue them with `stagger: .06` |
+| Split apart / regroup | Built in | `B.move(el, dx, dy, {rot, frames, delay})` as a cue item: stepped stop-motion move of a placed piece |
+| Rattle (dice roll, buzzing phone) | Built in | `B.shake(el, {deg, px, dur})` as a cue item |
 
 ## 2. Paper and print look
 | Effect | Status | How |
@@ -49,10 +51,10 @@ Stop-motion rule of thumb: step motion at 12 fps (`steps(n,end)` in CSS, or held
 | Big red X on mugshots | Built in | `B.marker('cross', {x,y,w,h})` |
 | Sticky notes, index-card flip | Recipe | yellow square card; flip = `rotateY(180deg)` stepped, swapping front/back content at 90° |
 | Magnifying-glass zoom | Recipe | magnifier sticker plus a circular `div` with `overflow:hidden` holding a scaled clone of the area (`transform: scale(2)`), moving together |
-| Flashlight sweep | Recipe | board-sized overlay `radial-gradient(circle at var(--x) var(--y), transparent 90px, rgba(0,0,0,.85) 160px)`; move `--x/--y` in `B.onFrame`; tense music |
+| Flashlight sweep | Built in | `const torch = B.flashlight([[t,x,y],...], {r})`; reveal `torch.el` at `'@0'`, put `torch.off` in a later cue (lights snap on) |
 | Redaction lifting | Recipe | black bar as a piece; on the cue, peel it with `clip-path` from left in 6 steps, revealing the text below |
 | Fingerprint, case-number tag, evidence bag | Recipe | SVG props → `stickers.py`; evidence bag = translucent rounded rect with a zip-line and a label |
-| Final recap board | Recipe | last-but-one scene re-uses the key pieces of earlier scenes (small) and strings them all to the verdict; a big payoff |
+| Final recap board | Recipe (see example scene 9) | small copies of each scene's key clue around a definition card (raise the card's `z` above strings to 79), pins on each, strings drawn to one hub on the verdict cue with `stagger: .07` |
 
 ## 4. Text
 | Effect | Status | How |
@@ -64,7 +66,7 @@ Stop-motion rule of thumb: step motion at 12 fps (`steps(n,end)` in CSS, or held
 | Text match-cut montage | Recipe | 10–12 newspaper pieces where the key word sits at the same screen point; show each for 8→3 frames, faster and faster, with a click per cut (function cues) |
 | Handwritten notes | Needs (optional): a handwriting font is fine without assets | Google Font "Caveat"/"Reenie Beanie" added to the font link + stepped wipe |
 | Strike-through | Built in | `B.marker('underline', {x1, x2, y: textMiddle})` |
-| Ticker / receipt printing | Recipe | a narrow strip whose height grows by one line per 2 frames, with a printer buzz SFX |
+| Ticker / receipt printing | Built in | `anim:'print', sfx:'printer'` on a narrow `card` piece (prints top to bottom in steps) |
 
 ## 5. Camera
 | Effect | Status | How |
@@ -116,9 +118,9 @@ Stop-motion rule of thumb: step motion at 12 fps (`steps(n,end)` in CSS, or held
 ## 9. Sound design (`SFX` in the engine; add new ones with `now()` + `sfxBus`)
 | Sound | Status |
 |---|---|
-| paper step-rustle + landing thud, stamp thud, pin, string zip, typewriter + ding, whoosh, boom, marker squeak, camera shutter | Built in |
+| paper step-rustle + landing thud, stamp thud, pin, string zip, typewriter + ding, whoosh, boom, marker squeak, camera shutter, scissors snip, receipt printer, dice rattle, light-switch click | Built in |
 | vinyl crackle, noir-jazz bed that ducks under the voice | Built in |
-| scissors snip, paper tear, crumple, page flip, projector whir, string twang, clock tick, cash register, verdict sting | Recipe (filtered noise bursts / short oscillator envelopes, like the existing SFX) |
+| paper tear, crumple, page flip, projector whir, string twang, clock tick, cash register, verdict sting | Recipe (filtered noise bursts / short oscillator envelopes, like the existing SFX) |
 | Licensed music track instead of the generated bed | Needs: the track file + its licence |
 
 ## 10. Pacing tricks
