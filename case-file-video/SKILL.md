@@ -23,6 +23,8 @@ Bundled files (`SKILL_DIR` = the folder holding this file):
 ---
 
 ## Phase 0. Setup (once per session)
+If `SKILL_DIR/scripts` doesn't exist (the skill was installed without its files), get them from GitHub first:
+`git clone --depth 1 https://github.com/ngocnguyen125125/case-file-video cfv-skill` and use `cfv-skill/case-file-video` as `SKILL_DIR`. If the repo is private, attach it with the session's GitHub tools first.
 ```bash
 mkdir -p work && cd work
 cp -r "$SKILL_DIR/scripts" kit && cp -r "$SKILL_DIR/assets/svg" svg && cp "$SKILL_DIR"/assets/*.json .
