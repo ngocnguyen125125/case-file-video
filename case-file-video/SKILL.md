@@ -14,6 +14,12 @@ Deliverables, every time:
 2. **Playable web page** (browser voice, Web Audio score, word-synced captions). Publish it as an artifact when that tool exists.
 3. **MP4** (1080x1920, 30 fps, H.264/AAC, −14 LUFS, offline neural voice) **plus an .srt caption file**. Never skip the export.
 
+The house look. Keep it consistent; be inventive inside it.
+- **Stage.** 9:16 (720x1280 design units). A dark wooden desk lit by a lamp, light through window blinds, drifting dust, a light film look (grain, flicker, scratches). A 16:9 cork board sits in the middle (720x405 units). Above it: a yellow evidence-tape title with a small typed kicker. Below it: word-highlighted captions.
+- **Scene motion.** Each scene opens on a clean base paper. Clippings enter **stop-motion** from the nearest board edge at about 12 fps held frames: lifted while moving, pressed flat on landing, then a faint twitch. Stamps slam in three frames with a board jolt. Pins pop, then red string draws pin to pin in steps. Typed strips type on. The camera drifts smoothly, and between scenes the old board blurs and dissolves into the new one.
+- **Paper.** Photo props are halftone prints with scissor-cut polygon edges and newsprint margins showing bits of article text. Single-word clippings use mixed newspaper type (bold serif, condensed headline, white-on-black) like a ransom note.
+- **Type and colour.** Anton (labels, stamps), Special Elite (typed labels), Courier Prime (captions, mono strips), Old Standard TT (newsprint). Red #b3231d, tape yellow #e9b82a.
+
 Bundled files (`SKILL_DIR` = the folder holding this file):
 - `scripts/`: `engine.template.html` (engine + worked example "What is a token?"), `render_svgs.js`, `stickers.py`, `build.py`, `check.js`, `storyboard.js`, `narrate.py`, `export.js`
 - `assets/svg/`: reusable props (robot detective, magnifier, scissors, strawberry, coins, stopwatch, filing cabinet, dice); `assets/*.example.json`
