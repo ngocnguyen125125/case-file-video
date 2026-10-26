@@ -6,7 +6,7 @@
 //          smallest text on the board (stage px on the 720-wide frame; warn under 18), the hero visual's size (the elements
 //          marked with B.hero(...), measured as one group; else the biggest single piece): warn when it covers under 10% of
 //          the frame AND spans under 75% of its width, text inside the platform-button corner (stage x > 620, y > 697),
-//          and B.cue words that don't match any narration word
+//          B.cue words that don't match any narration word, and pieces that are visible before their cue
 // fontsource_dir = node_modules/@fontsource after: npm i @fontsource/anton @fontsource/special-elite @fontsource/courier-prime @fontsource/old-standard-tt
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
@@ -36,7 +36,7 @@ const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Sp
     for (let i = 1; i <= n; i++) {
       await p.goto('http://local/page#scene' + i); await p.reload(); await p.waitForTimeout(1200);
       const r = await p.evaluate(() => {
-        const miss = (window.__cueMiss || []).map(m => m.key);
+        const miss = (window.__cueMiss || []).map(m => m.key), early = window.__preVisible || [];
         const st = document.querySelector('#stage').getBoundingClientRect(), k = 720 / st.width;
         const layer = [...document.querySelectorAll('#board .layer')].pop();
         const toStage = rc => ({ x: (rc.left - st.left) * k, y: (rc.top - st.top) * k, w: rc.width * k, h: rc.height * k });
@@ -58,19 +58,20 @@ const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Sp
         if (marked.length) {
           const bs = marked.map(e => toStage(e.getBoundingClientRect())), x0 = Math.max(0, Math.min(...bs.map(b => b.x))), y0 = Math.max(0, Math.min(...bs.map(b => b.y)));
           const x1 = Math.min(720, Math.max(...bs.map(b => b.x + b.w))), y1 = Math.min(1280, Math.max(...bs.map(b => b.y + b.h)));
-          return { miss, min: texts.slice(0, 2), hero: { pct: +((x1 - x0) * (y1 - y0) / (720 * 1280) * 100).toFixed(1), wpct: Math.round((x1 - x0) / 7.2), what: `hero (${marked.length} piece${marked.length > 1 ? 's' : ''})` }, corner };
+          return { miss, early, min: texts.slice(0, 2), hero: { pct: +((x1 - x0) * (y1 - y0) / (720 * 1280) * 100).toFixed(1), wpct: Math.round((x1 - x0) / 7.2), what: `hero (${marked.length} piece${marked.length > 1 ? 's' : ''})` }, corner };
         }
         layer.querySelectorAll('img, .chip, .yellow, .card, .q, .ph, .stamp, .news').forEach(e => {
           if (!vis(e) || (e.classList.contains('news'))) return;
           const b = toStage(e.getBoundingClientRect()), a = Math.max(0, Math.min(720, b.x + b.w) - Math.max(0, b.x)) * Math.max(0, Math.min(1280, b.y + b.h) - Math.max(0, b.y));
           if (a > hero.a) hero = { a, w: Math.min(720, b.x + b.w) - Math.max(0, b.x), what: e.tagName === 'IMG' ? 'cutout' : (e.className.split(' ').find(c => ['chip', 'yellow', 'card', 'q', 'ph', 'stamp'].includes(c)) || e.className) + (e.textContent ? ' "' + e.textContent.trim().slice(0, 18) + '"' : '') };
         });
-        return { miss, min: texts.slice(0, 2), hero: { pct: +(hero.a / (720 * 1280) * 100).toFixed(1), wpct: Math.round((hero.w || 0) / 7.2), what: 'unmarked, biggest piece: ' + hero.what }, corner };
+        return { miss, early, min: texts.slice(0, 2), hero: { pct: +(hero.a / (720 * 1280) * 100).toFixed(1), wpct: Math.round((hero.w || 0) / 7.2), what: 'unmarked, biggest piece: ' + hero.what }, corner };
       });
       const w = [];
       if (r.min[0] && r.min[0].px < 18) w.push(`small text ${r.min[0].px}px "${r.min[0].t}"`);
       if (r.hero.pct < 10 && r.hero.wpct < 75) w.push(`hero visual too small: ${r.hero.pct}% of the frame, ${r.hero.wpct}% of its width`);
       if (r.corner.length) w.push(`text under the platform buttons: ${r.corner.join(' | ')}`);
+      if (r.early.length) w.push(`visible before its cue (inline opacity?): ${r.early.join(' | ')}`);
       if (r.miss.length) w.push(`cue word(s) not found in the narration (they fire too early): ${r.miss.join(', ')}`);
       warns += w.length;
       console.log(`scene ${i}: smallest text ${r.min[0] ? r.min[0].px + 'px "' + r.min[0].t + '"' : '-'} · ${r.hero.what} ${r.hero.pct}% of frame, ${r.hero.wpct}% wide${w.length ? '\n   WARN ' + w.join('\n   WARN ') : ' · ok'}`);

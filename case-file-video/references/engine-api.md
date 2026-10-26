@@ -34,7 +34,7 @@
 | `B.piece({x,y,w,h,rot,cls,html,style,z,anim,sfx,tornJ,shadow})` | Any paper piece. `cls`: `paper`, `manila` (base sheets; area ≥ 90,000 appears instantly), `card`, `chip`, `strip`, `yellow`, `news`, `ph`. `anim`: `slide` (default stop-motion), `wipe`, `drop`, `fade`, `hop`, `spin` (spinning newspaper), `print` (receipt prints top-down), `base` (instant). `tornJ` = edge roughness (0 = none). |
 | `B.news(x,y,w,h,rot)` | Newspaper clipping with a generated headline + columns |
 | `B.sticker(name,x,y,h,rot,z)` | Photo cutout from `stickers.js` |
-| `B.stamp(text,x,y,size,rot,{round:px, style})` | Red rubber stamp (slams + jolt) |
+| `B.stamp(text,x,y,size,rot,{round:px, paper, style})` | Red rubber stamp (slams + jolt). `paper: true` = printed on a paper label, for dark backdrops |
 | `B.pin(x,y,brass)` → pin; `B.string(pinA,pinB,sag)` | Pins and red string |
 | `B.tape(x,y,rot,w)` | Masking tape |
 | `B.marker(kind, params, {color,width})` | Red marker draw-on: `circle {cx,cy,rx,ry}`, `underline {x1,x2,y}`, `arrow {x1,y1,x2,y2}`, `cross {x,y,w,h}`, `path {d}` |
@@ -46,7 +46,7 @@
 | `B.flashlight(pts, {r})` → `{el, off}` | Dark board with a searching beam; `pts = [[t,x,y],…]` in scene seconds and board units. Reveal `el` at `'@0'`, cue `off` to switch the lights on |
 | `B.question(text, {x,y,w,size,rot,z,hot})` → `{el, words}` | Big ransom-note question (hook, comment prompt). Every word is its own clipping; the last word ending in `?` and the words at indexes in `hot` print red. Cue the words early: `B.cue('@0', q.words, {stagger: .06})` |
 | `B.hero(...items)` | Mark the scene's hero visual (one element or a group). `check.js lint` measures it |
-| `B.fill(style, z)` | Full-board backdrop (e.g. `'background:#05040a'` for space). Reveal at `'@0'`. On dark backdrops, give stamps a paper back: `B.stamp(..., {style:'background:#f3ecd9;mix-blend-mode:normal;opacity:1'})` |
+| `B.fill(style, z)` | Full-board backdrop (e.g. `'background:#05040a'` for space). Reveal at `'@0'`. On dark backdrops, give stamps a paper back: `B.stamp(..., {paper: true})` (never set `opacity` in a piece's inline style: it overrides the hidden state, so the piece shows before its cue) |
 | `B.placeholder({x,y,w,h,label,rot,z})` | "ASSET NEEDED" card for the storyboard; swap it for the real asset later |
 | `B.el(html, anim, sfx)` | Raw element (censor bars, cut lines, custom overlays). The element starts hidden until its cue. |
 | `B.onFrame(fn(sceneClock, dt))` | Per-frame JS for custom effects (export-safe) |

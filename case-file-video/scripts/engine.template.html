@@ -107,6 +107,7 @@ body{background:var(--desk);color:var(--ui);font-family:var(--f-mono);overflow:h
   clip-path:polygon(0 8%,6% 0,12% 10%,20% 2%,30% 8%,42% 0,55% 9%,66% 1%,78% 8%,90% 0,100% 7%,96% 52%,100% 95%,88% 100%,76% 91%,64% 100%,50% 92%,38% 100%,26% 91%,14% 100%,0 93%,4% 50%)}
 .stamp{font-family:var(--f-display);color:var(--evidence);border:3.5px solid var(--evidence);padding:2px 10px 0;letter-spacing:2px;text-transform:uppercase;
   mix-blend-mode:multiply;opacity:.9;white-space:nowrap;outline:1.5px solid var(--evidence);outline-offset:2px;z-index:70}
+.stamp.paper-back{background:#f3ecd9;mix-blend-mode:normal}   /* B.stamp(..., {paper: true}): readable on dark backdrops */
 .stamp.round{border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;outline:none;border-width:3px;line-height:1.05}
 .pin{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;z-index:80;
   background:radial-gradient(circle at 35% 30%,#ff8a7a 0 12%,#d42a1f 35%,#7d0d08 100%);box-shadow:2px 3px 3px rgba(0,0,0,.5)}
@@ -440,7 +441,7 @@ function Builder(layer, L = LAYOUTS.classic) {
     },
     stamp(text, x, y, size, rot, opts = {}) {
       const st = opts.round ? `width:${opts.round}px;height:${opts.round}px;` : '';
-      const e = B.el(`<div class="abs stamp ${opts.round ? 'round' : ''}" style="left:${x}px;top:${y}px;font-size:${size}px;--r:${rot}deg;transform:rotate(${rot}deg);${st}${opts.style || ''}">${text}</div>`, 'slam', 'stamp');
+      const e = B.el(`<div class="abs stamp ${opts.round ? 'round' : ''} ${opts.paper ? 'paper-back' : ''}" style="left:${x}px;top:${y}px;font-size:${size}px;--r:${rot}deg;transform:rotate(${rot}deg);${st}${opts.style || ''}">${text}</div>`, 'slam', 'stamp');
       e.style.maskImage = e.style.webkitMaskImage = `url(${grungeURL})`; e.style.maskSize = e.style.webkitMaskSize = '120px';
       return e;
     },
@@ -540,7 +541,7 @@ const SCENES = [
      const q = B.question('What does an AI actually read?', { y: 96, size: 66 });
      const chip = B.piece({ x: 410, y: 520, cls: 'chip', html: 'WORDS', rot: 7, z: 40, shadow: 'shadow-lg', anim: 'drop', style: 'font-size:60px;background-color:#ece5d3' });
      const cross = B.marker('cross', { x: 418, y: 528, w: 214, h: 64 }, { width: 8 });
-     const file = B.stamp('Case file #001', 40, 820, 40, -8, { style: 'background:#f3ecd9;mix-blend-mode:normal;opacity:1' });
+     const file = B.stamp('Case file #001', 40, 820, 40, -8, { paper: true });
      B.hero(robot, q.el);
      B.cue('@0', [...bg, robot, ...q.words], { stagger: .06 });
      B.cue('actually', [B.punch(360, 440, 1.12, 1.4)]);
@@ -597,7 +598,7 @@ const SCENES = [
      const yl = B.piece({ x: 150, y: 650, cls: 'yellow', html: '1 word = 3 tokens', rot: -3, z: 40, style: 'font-size:52px' });
      B.cue('@0', [...bg, ...tp], { stagger: .12 });
      B.hero(letters);
-     B.cue("'Cat'", [card]);
+     B.cue('token', [card]);
      B.cue("'Unbelievable'", letters, { stagger: .06 });
      B.cue('might', [cut1, cut2, sc, () => sfx('snip')]);
      B.cue('un...', [...gm[0], tags[0]]);
@@ -627,7 +628,7 @@ const SCENES = [
      const yl = B.piece({ x: 120, y: 640, cls: 'yellow', html: 'Only numbers', rot: -2, z: 40, style: 'font-size:60px' });
      B.cue('@0', [...bg, ...tp], { stagger: .12 });
      B.hero(receipt, chips, ids);
-     B.cue('pieces:', chips, { stagger: .12 });
+     B.cue('stranger.', chips, { stagger: .12 });
      B.cue('swapped', [...pA, ...ids, ...pB, ...strs], { stagger: .05 });
      B.cue('number.', [receipt]);
      B.cue('long', [list]);
@@ -644,7 +645,7 @@ const SCENES = [
      const q = B.piece({ x: 410, y: 206, w: 292, cls: 'card', rot: 2, z: 25, tornJ: 1, style: 'font-size:23px;line-height:34px;background-image:none;background-color:#f1ead6;padding:14px 16px',
        html: `Q: How many <b style="color:var(--evidence)">R</b>'s<br>in "strawberry"?<br>AI: 2 ...<br>REAL ANSWER: 3` });
      const xout = B.marker('cross', { x: 452, y: 290, w: 22, h: 28 }, { width: 5 });
-     const wrong = B.stamp('Wrong', 520, 410, 44, -14, { style: 'background:#f3ecd9;mix-blend-mode:normal;opacity:1' });   // paper-backed: a plain stamp vanishes on a dark backdrop
+     const wrong = B.stamp('Wrong', 520, 410, 44, -14, { paper: true });   // paper-backed: a plain stamp vanishes on a dark backdrop
      const mag = B.sticker('magnifier', 286, 330, 230, 12, 24);
      const sees = B.piece({ x: 56, y: 704, cls: 'strip', html: 'WHAT THE AI ACTUALLY SEES:', rot: -1, z: 31, anim: 'wipe', sfx: 'type', style: 'font-size:24px;padding:5px 12px 3px' });
      const k1 = B.piece({ x: 60, y: 748, cls: 'chip', html: 'straw', rot: -2, z: 32, shadow: 'shadow-lg', style: 'font-size:72px;background-color:#ece5d3' });
@@ -653,7 +654,7 @@ const SCENES = [
      const s1 = B.string(s, a, 26), s2 = B.string(a, b, 12);
      const rings = [[186, 798], [468, 794], [511, 795]].map(([cx, cy]) => B.marker('circle', { cx, cy, rx: 24, ry: 38 }, { width: 5 }));
      const yl = B.piece({ x: 56, y: 868, cls: 'yellow', html: 'Chunks, not letters', rot: -2.5, z: 40, style: 'font-size:46px' });
-     const solved = B.stamp('Case<br>solved', 470, 500, 22, -16, { round: 136, style: 'background:#f3ecd9;mix-blend-mode:normal;opacity:1' });
+     const solved = B.stamp('Case<br>solved', 470, 500, 22, -16, { round: 136, paper: true });
      B.cue('@0', [...bg], { stagger: .08 });
      B.hero(berry, mag);
      B.cue('puzzle.', [B.flash(), berry, ex]);
@@ -707,7 +708,7 @@ const SCENES = [
      const hub = B.pin(362, 330);
      const ends = [[120, 70], [262, 64], [540, 46], [570, 146], [104, 556], [282, 700], [492, 706]].map(([x, y]) => B.pin(x, y));
      const strs = ends.map(p => B.string(p, hub, 16));
-     const verdict = B.stamp('Verdict', 236, 176, 66, -4, { style: 'background:#f3ecd9;mix-blend-mode:normal;opacity:1' });
+     const verdict = B.stamp('Verdict', 236, 176, 66, -4, { paper: true });
      const card = B.piece({ x: 196, y: 330, w: 340, cls: 'card', rot: 1.5, z: 79, tornJ: 1, style: 'font-size:24px;line-height:36px;background-image:none;background-color:#f1ead6;padding:14px 18px',
        html: '<b style="font-family:var(--f-display);font-weight:400;font-size:32px;letter-spacing:1px">TOKEN (n.)</b><br>A puzzle piece of text.<br>Words go in. Pieces come out.' });
      const pcs = [['to', 220, 560, -5], ['ken', 306, 576, 4], ['s', 412, 556, -3]].map(([t, x, y, r]) => B.piece({ x, y, cls: 'chip', html: t, rot: r, z: 30, shadow: 'shadow-lg', style: 'font-size:42px' }));
@@ -908,6 +909,7 @@ function loadScene(i, opts = {}) {
   seed = 101 + i * 31;
   sceneHooks = [];
   B = Builder(layer, L); s.build(B); B.aimSlides();
+  if (opts.poster) layer.querySelectorAll('.pre:not(.a-draw)').forEach(e => { if (getComputedStyle(e).opacity !== '0') (window.__preVisible = window.__preVisible || []).push((e.textContent || e.getAttribute('class') || '').trim().slice(0, 24)); });   // for check.js lint
   const moves = [['-14px', '-6px', 1.06, '40% 40%'], ['12px', '-8px', 1.055, '60% 45%'], ['-10px', '6px', 1.05, '45% 60%'], ['10px', '4px', 1.06, '55% 50%']][i % 4];
   B.cam.style.setProperty('--kx', moves[0]); B.cam.style.setProperty('--ky', moves[1]); B.cam.style.setProperty('--ks', moves[2]); B.cam.style.setProperty('--ko', moves[3]);
   if (opts.poster) { B.cam.style.animation = 'none'; }
