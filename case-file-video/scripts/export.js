@@ -87,9 +87,20 @@ const run = (cmd, a) => execFileSync(cmd, a, { stdio: 'inherit' });
     filt.push(`[${k}:a]aresample=44100,aformat=channel_layouts=stereo,volume=1.6,adelay=${Math.round(s.start * 1000)}|${Math.round(s.start * 1000)}[v${k}]`); k++;
   });
   const vin = Array.from({ length: k - 1 }, (_, i) => `[v${i + 1}]`).join('');
-  filt.push(`${vin}amix=inputs=${k - 1}:normalize=0[vo]`, `[0:a][vo]amix=inputs=2:normalize=0,alimiter=limit=0.95[mix]`);
+  filt.push(`${vin}amix=inputs=${k - 1}:normalize=0[vo]`, `[0:a][vo]amix=inputs=2:normalize=0,alimiter=limit=0.95,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=44100[mix]`);
   const mix = path.join(work, 'mix.wav');
   run('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, '-filter_complex', filt.join(';'), '-map', '[mix]', '-t', String(dur), mix]);
   run('ffmpeg', ['-y', '-loglevel', 'error', '-i', silent, '-i', mix, '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', outMp4]);
-  console.log(`wrote ${outMp4} (${dur.toFixed(1)}s, ${f} frames)`);
+  // captions file next to the MP4: phrases of up to 7 words, timed from the narration word starts
+  const ts = x => { const ms = Math.round(x * 1000), h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, s2 = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s2).padStart(2, '0')},${String(ms % 1000).padStart(3, '0')}`; };
+  const cues = [];
+  exp.speech.forEach(sp => {
+    const w = says[sp.scene].split(/\s+/), tm = narration[sp.scene].times; let cur = [];
+    const flush = () => { if (!cur.length) return; const a = cur[0], z = cur[cur.length - 1]; cues.push({ s: sp.start + tm[a], e: z + 1 < w.length ? sp.start + tm[z + 1] : sp.end, t: cur.map(i => w[i]).join(' ') }); cur = []; };
+    w.forEach((x, i) => { cur.push(i); if (cur.length >= 7 || /[.?!:,]$/.test(x) && !/^([A-Za-z]\.)+s?$/.test(x) && cur.length >= 3 || /[.?!]$/.test(x) && !/^([A-Za-z]\.)+s?$/.test(x)) flush(); });
+    flush();
+  });
+  const srt = outMp4.replace(/\.mp4$/i, '') + '.srt';
+  fs.writeFileSync(srt, cues.filter(c => c.s < dur).map((c, i) => `${i + 1}\n${ts(c.s)} --> ${ts(Math.min(c.e, dur))}\n${c.t}\n`).join('\n'));
+  console.log(`wrote ${outMp4} (${dur.toFixed(1)}s, ${f} frames) + ${srt}`);
 })();

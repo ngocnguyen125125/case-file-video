@@ -93,6 +93,13 @@ body{background:var(--desk);color:var(--ui);font-family:var(--f-mono);overflow:h
   background:radial-gradient(circle at 35% 30%,#ff8a7a 0 12%,#d42a1f 35%,#7d0d08 100%);box-shadow:2px 3px 3px rgba(0,0,0,.5)}
 .pin.brass{background:radial-gradient(circle at 35% 30%,#fff1b8 0 12%,#c79a32 40%,#5e420c 100%);width:11px;height:11px;margin:-5.5px 0 0 -5.5px}
 svg.strings{position:absolute;left:0;top:0;width:720px;height:405px;z-index:78;pointer-events:none;overflow:visible}
+.zoom{position:absolute;inset:0}
+svg.marks{position:absolute;left:0;top:0;width:720px;height:405px;z-index:85;pointer-events:none;overflow:visible}
+svg.marks path{fill:none;stroke:#c22a20;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;opacity:.92}
+.hl{position:absolute;background:rgba(255,212,0,.55);mix-blend-mode:multiply;z-index:65;border-radius:3px 7px 4px 8px}
+.ph{border:3px dashed var(--evidence);background:repeating-linear-gradient(45deg,rgba(179,35,29,.08) 0 10px,rgba(255,255,255,.35) 10px 20px),#efe7d3;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--f-type);color:var(--evidence);font-size:13px;line-height:1.3;padding:8px}
+.ph b{display:block;font-family:var(--f-display);font-weight:400;font-size:16px;letter-spacing:1px}
+#filmfx{position:absolute;left:0;top:0;width:720px;height:1280px;pointer-events:none;z-index:150;mix-blend-mode:overlay}
 svg.strings path{stroke:var(--evidence);stroke-width:2.3;fill:none;filter:url(#ss)}
 .censor{position:absolute;background:#0b0b0b;z-index:23}
 .cut{position:absolute;border-left:2.5px dashed var(--evidence);z-index:12}
@@ -282,7 +289,36 @@ function drawDust() {
   }
 }
 
+/* ---------- per-frame hooks: anything animated from JS must run here so the MP4 export captures it ---------- */
+const frameHooks = [];          // global: fn(dt) every frame, also before play
+let sceneHooks = [];            // per scene: fn(sceneClock, dt) while playing; cleared on scene change
+
+/* ---------- film look: grain, exposure flicker, scratches, dust, gate weave ---------- */
+const LOOK = { grain: .5, flicker: .35, scratches: .5, weave: .5 };   // TOPIC: 0 turns an effect off, 1 is strong
+(() => {
+  const c = document.createElement('canvas'); c.id = 'filmfx'; c.width = 360; c.height = 640; stage.appendChild(c);
+  const g = c.getContext('2d'), tiles = [];
+  for (let k = 0; k < 4; k++) { const t = document.createElement('canvas'); t.width = t.height = 128; const tg = t.getContext('2d'), id = tg.createImageData(128, 128);
+    for (let i = 0; i < id.data.length; i += 4) { const v = Math.random() * 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; } tg.putImageData(id, 0, 0); tiles.push(t); }
+  let acc = 0, frame = 0, scratch = null;
+  frameHooks.push(dt => {
+    if (reduced || (playing && paused)) return;
+    acc += dt; if (acc < 1 / 15) return; acc = 0; frame++;      // film artefacts update at ~15 fps
+    g.clearRect(0, 0, 360, 640);
+    if (LOOK.grain) { g.globalAlpha = .1 + .25 * LOOK.grain; const t = tiles[frame % 4], ox = -Math.random() * 128, oy = -Math.random() * 128; for (let x = ox; x < 360; x += 128) for (let y = oy; y < 640; y += 128) g.drawImage(t, x, y); }
+    if (LOOK.flicker) { const v = 128 + (Math.random() - .5) * 60 * LOOK.flicker; g.globalAlpha = .5; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(0, 0, 360, 640); }
+    if (LOOK.scratches) {
+      if (!scratch && Math.random() < .05 * LOOK.scratches) scratch = { x: R(20, 340), life: 2 + Math.floor(Math.random() * 4) };
+      if (scratch) { g.globalAlpha = .55; g.fillStyle = '#e8e8e8'; g.fillRect(scratch.x + R(-1, 1), 0, 1, 640); if (--scratch.life <= 0) scratch = null; }
+      if (Math.random() < .25 * LOOK.scratches) { g.globalAlpha = .6; g.fillStyle = Math.random() < .5 ? '#111' : '#eee'; g.beginPath(); g.arc(R(0, 360), R(0, 640), R(.5, 2), 0, 7); g.fill(); }
+    }
+    g.globalAlpha = 1;
+    if (LOOK.weave) board.style.translate = `${(R(-.6, .6) * LOOK.weave).toFixed(2)}px ${(R(-.6, .6) * LOOK.weave).toFixed(2)}px`;
+  });
+})();
+
 /* ---------- element builders ---------- */
+const SVGNS = 'http://www.w3.org/2000/svg';
 function mk(html, parent) { const t = document.createElement('div'); t.innerHTML = html.trim(); const e = t.firstChild; parent.appendChild(e); return e; }
 // scissor cut: a few straight cuts with slightly crooked corners
 function scissorCut(e, j = 4) {
@@ -312,11 +348,12 @@ function para(n) { const s = []; for (let i = 0; i < n; i++) s.push(WORDS[Math.f
 const HEADS = ['Machines Learn To Read', 'The Word Puzzle', 'Bureau Of Language', 'New Electronic Brain', 'Signals Decoded', 'Text Into Numbers', 'Counting The Pieces'];
 
 function Builder(layer) {
-  const cam = mk('<div class="cam"></div>', layer);
+  const zoom = mk('<div class="zoom"></div>', layer);   // punch-in zooms animate this wrapper
+  const cam = mk('<div class="cam"></div>', zoom);      // slow Ken Burns drift animates this one
   const cues = [];
-  let strings = null;
+  let strings = null, marks = null;
   const B = {
-    cam, cues,
+    cam, zoom, cues,
     el(html, anim = 'drop', sfx = 'paper') { const e = mk(html, cam); e.classList.add('pre', 'a-' + anim); e.dataset.sfx = anim === 'slide' && sfx === 'paper' ? 'slide' : sfx; return e; },
     // every sliding item enters from the board edge nearest to it, like the reference video
     aimSlides() {
@@ -368,13 +405,38 @@ function Builder(layer) {
     },
     // cue: key is a narration word (exact, case-insensitive), "word*" for prefix, or "@1.5" for seconds after scene start
     cue(key, items, opts = {}) { cues.push({ key, items: [].concat(items), stagger: opts.stagger ?? .09 }); },
+    // storyboard stand-in for media the user still has to send (shows a red dashed 'ASSET NEEDED' card)
+    placeholder({ x, y, w, h, label, rot = 0, z = 20 }) { return B.piece({ x, y, w, h, rot, z, cls: 'ph', tornJ: 0, shadow: 'shadow-lg', html: `<div><b>ASSET NEEDED</b>${label}</div>` }); },
+    // red marker draw-on: kind = circle {cx,cy,rx,ry} | underline {x1,x2,y} | arrow {x1,y1,x2,y2} | cross {x,y,w,h} | path {d}
+    marker(kind, p, o = {}) {
+      if (!marks) { marks = document.createElementNS(SVGNS, 'svg'); marks.setAttribute('class', 'marks'); cam.appendChild(marks); }
+      const j = (v, a = 2) => v + R(-a, a); let d = '';
+      if (kind === 'circle') { const { cx, cy, rx, ry = rx } = p, n = 28, t0 = R(0, 6.28); for (let i = 0; i <= n * 1.12; i++) { const t = t0 + i / n * 6.283, k = 1 + R(-.04, .04) + i / n * .05; d += (i ? 'L' : 'M') + (cx + Math.cos(t) * rx * k).toFixed(1) + ' ' + (cy + Math.sin(t) * ry * k).toFixed(1); } }
+      else if (kind === 'underline') { const { x1, x2, y } = p; d = `M${x1} ${j(y)} Q${(x1 + x2) / 2} ${j(y + 4, 3)} ${x2} ${j(y - 2)}`; }
+      else if (kind === 'arrow') { const { x1, y1, x2, y2 } = p, a = Math.atan2(y2 - y1, x2 - x1), L = 16; d = `M${x1} ${y1} Q${(x1 + x2) / 2 + R(-15, 15)} ${(y1 + y2) / 2 + R(-15, 15)} ${x2} ${y2} M${x2 - L * Math.cos(a - .5)} ${y2 - L * Math.sin(a - .5)} L${x2} ${y2} L${x2 - L * Math.cos(a + .5)} ${y2 - L * Math.sin(a + .5)}`; }
+      else if (kind === 'cross') { const { x, y, w, h } = p; d = `M${j(x)} ${j(y)} L${j(x + w)} ${j(y + h)} M${j(x + w)} ${j(y)} L${j(x)} ${j(y + h)}`; }
+      else d = p.d;
+      const path = document.createElementNS(SVGNS, 'path'); path.setAttribute('d', d);
+      if (o.color) path.style.stroke = o.color; if (o.width) path.style.strokeWidth = o.width;
+      marks.appendChild(path); const len = Math.ceil(path.getTotalLength()) + 2;
+      path.style.strokeDasharray = len; path.style.setProperty('--len', len); path.style.strokeDashoffset = len;
+      path.classList.add('pre', 'a-draw'); path.dataset.sfx = 'marker'; return path;
+    },
+    // yellow highlighter swipe over a region (wipes on left to right)
+    highlight(x, y, w, h, rot = -1) { return B.el(`<div class="hl" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;--r:${rot}deg;transform:rotate(${rot}deg)"></div>`, 'wipe', 'marker'); },
+    // camera punch-in on a board point; use as a cue item: B.cue('secret?', [B.punch(585, 145, 1.3, 1.6)])
+    punch(x, y, scale = 1.3, hold = 1.6) { return () => { zoom.style.transformOrigin = `${x}px ${y}px`; const E = 'cubic-bezier(.3,.7,.2,1)';
+      const a = zoom.animate([{ transform: 'scale(1)', easing: E }, { transform: `scale(${scale})`, offset: .2 }, { transform: `scale(${scale})`, offset: .82, easing: E }, { transform: 'scale(1)' }], { duration: (hold + .6) * 1000 });
+      smAnims.add(a); a.onfinish = () => smAnims.delete(a); sfx('whoosh'); }; },
+    // per-frame JS for custom effects (canvas, counters, flashlight...): fn(sceneClock, dt); export-safe
+    onFrame(fn) { sceneHooks.push(fn); },
   };
   return B;
 }
 
 /* ---------- scenes ----------  TOPIC: replace this whole SCENES array (worked example: 'What is a token?') */
 const SCENES = [
- { kicker: 'CASE FILE #001 · AI EXPLAINED', title: 'What is a token?',
+ { kicker: 'CASE FILE #001 · AI EXPLAINED', title: 'What is a token?', fx: ['mugshot cutout slides in', 'censor bar', 'stamp slam', 'punch-in on the secret', 'red string'],
    say: "Case file number one. The suspect: every A.I. chatbot you've ever talked to. Its secret? It doesn't actually read words.",
    build(B) {
      const bg = [B.news(-10, -6, 230, 200, -3), B.news(470, 250, 260, 170, 4),
@@ -398,11 +460,11 @@ const SCENES = [
      B.cue('suspect:', [robot, t1, t2, subj]);
      B.cue("you've", [bar]);
      B.cue('talked', [card, t3]);
-     B.cue('secret?', [p1, p2, s1, cls]);
+     B.cue('secret?', [p1, p2, s1, cls, B.punch(585, 150, 1.25, 1.5)]);
      B.cue("doesn't", [yl, p3, s2]);
      B.cue('words.', [ex]);
    } },
- { kicker: 'EVIDENCE A · THE CHOP', title: 'Text gets chopped',
+ { kicker: 'EVIDENCE A · THE CHOP', title: 'Text gets chopped', fx: ['typewriter strip', 'scissors + cut lines', 'ransom-note word chips', 'pins + string chain'],
    say: "Before an A.I. reads anything, it chops your text into little pieces. These pieces are called tokens.",
    build(B) {
      const bg = [B.news(500, -10, 240, 190, 3), B.piece({ x: 20, y: 14, w: 560, h: 380, rot: -.8, cls: 'paper', tornJ: 3 })];
@@ -425,7 +487,7 @@ const SCENES = [
      B.cue('These', [...pins, ...strs], { stagger: .06 });
      B.cue('tokens.', [yl, p7, s7, ev]);
    } },
- { kicker: 'EVIDENCE B · BIG WORDS', title: '1 word → 3 tokens',
+ { kicker: 'EVIDENCE B · BIG WORDS', title: '1 word → 3 tokens', fx: ['index card', 'cut lines', 'chips land on each spoken syllable'],
    say: "Common words, like 'the' or 'cat', are usually one token. Longer, rarer words get split up. 'Unbelievable' might become: un... believ... able.",
    build(B) {
      const bg = [B.news(-20, 250, 230, 170, -4), B.piece({ x: 22, y: 16, w: 676, h: 372, rot: .6, cls: 'paper', tornJ: 3 })];
@@ -456,7 +518,7 @@ const SCENES = [
      B.cue('believ...', [chips[1], pins[1], tags[1], s1]);
      B.cue('able.', [chips[2], pins[2], tags[2], s2, yl, p4, s3]);
    } },
- { kicker: 'EVIDENCE C · THE CODE', title: 'Tokens become numbers',
+ { kicker: 'EVIDENCE C · THE CODE', title: 'Tokens become numbers', fx: ['chip → ID tag strings', 'ledger card', 'typed number list', 'highlighter swipe', 'stamp'],
    say: "Next, every token is swapped for a number. That's all the A.I. ever sees: a long list of numbers.",
    build(B) {
      const bg = [B.news(480, -14, 260, 200, 3), B.piece({ x: 16, y: 18, w: 450, h: 370, rot: -1, cls: 'manila', tornJ: 3 })];
@@ -480,9 +542,10 @@ const SCENES = [
      B.cue('swapped', [...pA, ...ids, ...pB, ...strs], { stagger: .05 });
      B.cue('number.', [ledger, tape3]);
      B.cue('sees:', [list]);
+     B.cue('long', [B.highlight(48, 307, 330, 20, -1.5)]);
      B.cue('numbers.', [yl, dec]);
    } },
- { kicker: 'FIELD NOTES', title: 'The ¾ rule',
+ { kicker: 'FIELD NOTES', title: 'The ¾ rule', fx: ['stamp', 'two-scale paper ruler wipes on', 'magnifier'],
    say: "Rule of thumb: in English, one token is about three quarters of a word. So a hundred tokens is roughly seventy-five words.",
    build(B) {
      const bg = [B.news(-14, -10, 240, 190, -2), B.news(500, 230, 240, 190, 3), B.piece({ x: 40, y: 22, w: 640, h: 360, rot: .8, cls: 'paper', tornJ: 3 })];
@@ -507,7 +570,7 @@ const SCENES = [
      B.cue('hundred', [ruler, pA, pB, s]);
      B.cue('seventy-five', [c2, yl]);
    } },
- { kicker: 'UNSOLVED CASE', title: 'The strawberry mystery',
+ { kicker: 'UNSOLVED CASE', title: 'The strawberry mystery', fx: ['spot-colour halftone prop', 'WRONG stamp', 'magnifier', 'marker underline', 'round CASE SOLVED stamp'],
    say: "That solves a famous mystery. Ask some A.I.s how many R's are in strawberry, and they get it wrong. Why? They see chunks, not letters.",
    build(B) {
      const bg = [B.news(240, 280, 240, 150, -3), B.piece({ x: 14, y: 22, w: 330, h: 360, rot: -2.5, cls: 'manila', tornJ: 3 }),
@@ -532,9 +595,9 @@ const SCENES = [
      B.cue('wrong.', [wrong]);
      B.cue('Why?', [mag, sees]);
      B.cue('chunks,', [k1, k2, a, b, s, s1, s2], { stagger: .07 });
-     B.cue('letters.', [yl, solved]);
+     B.cue('letters.', [yl, solved, B.marker('underline', { x1: 372, x2: 640, y: 264 })]);
    } },
- { kicker: 'EVIDENCE D · THE BILL', title: 'Measured in tokens',
+ { kicker: 'EVIDENCE D · THE BILL', title: 'Measured in tokens', fx: ['three props with typed labels', 'strings converge on one hub'],
    say: "Tokens are also how A.I. gets measured. Its memory limit, its price, and its speed are all counted in tokens.",
    build(B) {
      const bg = [B.news(-10, 230, 250, 190, -3), B.news(480, -12, 250, 170, 2), B.piece({ x: 18, y: 16, w: 684, h: 374, rot: -.5, cls: 'paper', tornJ: 3 })];
@@ -558,7 +621,7 @@ const SCENES = [
      B.cue('counted', [...pins, hub, ...strs], { stagger: .08 });
      B.cue('tokens.', [yl]);
    } },
- { kicker: 'EVIDENCE E · THE ANSWER', title: 'One token at a time',
+ { kicker: 'EVIDENCE E · THE ANSWER', title: 'One token at a time', fx: ['blank on a typed strip', 'dice', 'probability tags', 'winner chip hops into the blank'],
    say: "And when it answers you, it writes one token at a time, guessing the most likely next piece, again and again.",
    build(B) {
      const bg = [B.news(500, 240, 250, 190, 3), B.piece({ x: 18, y: 18, w: 520, h: 370, rot: -1, cls: 'paper', tornJ: 3 })];
@@ -586,7 +649,7 @@ const SCENES = [
      B.cue('next', [win, nt]);
      B.cue('again', [yl]);
    } },
- { kicker: 'THE VERDICT', title: 'Case closed',
+ { kicker: 'THE VERDICT', title: 'Case closed', fx: ['VERDICT stamp', 'definition card', 'puzzle-piece chips', 'marker circle', 'CASE CLOSED stamp'],
    say: "The verdict: a token is a puzzle piece of text. Case closed.",
    build(B) {
      const bg = [B.news(-12, -12, 250, 190, -3), B.news(470, 250, 260, 180, 2), B.piece({ x: 20, y: 18, w: 280, h: 370, rot: -2, cls: 'manila', tornJ: 3 })];
@@ -602,6 +665,7 @@ const SCENES = [
      B.cue('verdict:', [verdict]);
      B.cue('token', [card]);
      B.cue('puzzle', pcs, { stagger: .12 });
+     B.cue('text.', [B.marker('circle', { cx: 452, cy: 292, rx: 135, ry: 44 })]);
      B.cue('Case', [closed]);
    } },
 ];
@@ -700,6 +764,8 @@ const SFX = {
   whoosh() { const t = now(), s = noiseSrc(t, .5), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'bandpass'; f.Q.value = 1.2; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(1800, t + .2); f.frequency.exponentialRampToValueAtTime(400, t + .45); s.connect(f); f.connect(g); g.connect(sfxBus); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.35, t + .18); g.gain.exponentialRampToValueAtTime(.0001, t + .48); },
   boom() { const t = now(), o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(30, t + 1.4); o.connect(g); g.connect(sfxBus); env(g, t, .01, .9, 1.6); o.start(t); o.stop(t + 1.8);
     const s = noiseSrc(t, 1.2), f = AC.createBiquadFilter(), ng = AC.createGain(); f.type = 'lowpass'; f.frequency.value = 400; s.connect(f); f.connect(ng); ng.connect(sfxBus); env(ng, t, .01, .3, 1.1); },
+  marker() { const t = now(), s = noiseSrc(t, .4), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'bandpass'; f.Q.value = 6; f.frequency.setValueAtTime(1300, t); f.frequency.linearRampToValueAtTime(1900, t + .32); s.connect(f); f.connect(g); g.connect(sfxBus); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.2, t + .04); g.gain.setValueAtTime(.2, t + .28); g.gain.exponentialRampToValueAtTime(.0001, t + .4); },
+  shutter() { const t0 = now(); [0, .07].forEach((dt, i) => { const t = t0 + dt, s = noiseSrc(t, .04), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'highpass'; f.frequency.value = 2500; s.connect(f); f.connect(g); g.connect(sfxBus); env(g, t, .001, i ? .3 : .45, .03); }); },
   none() {},
 };
 function sfx(name) { if (EXP) { if (name && name !== 'none' && SFX[name]) EXP.sfxLog.push({ t: EXP.t, name }); return; } if (!AC || !name || !SFX[name]) return; try { SFX[name](); } catch (e) {} }
@@ -740,7 +806,7 @@ function renderCounter() { $('#counter').innerHTML = SCENES.map((_, i) => `<i cl
 let capChunks = [];
 function buildCaptions(text) {
   const ws = text.split(/\s+/); capChunks = []; let cur = [];
-  ws.forEach((w, i) => { cur.push(i); if (/[.?!:,]$/.test(w) && cur.length >= 3 || cur.length >= 7 || /[.?!]$/.test(w)) { capChunks.push(cur); cur = []; } });
+  ws.forEach((w, i) => { cur.push(i); const abbr = /^([A-Za-z]\.)+s?$/.test(w); if (!abbr && /[.?!:,]$/.test(w) && cur.length >= 3 || cur.length >= 7 || !abbr && /[.?!]$/.test(w)) { capChunks.push(cur); cur = []; } });
   if (cur.length) capChunks.push(cur);
 }
 let capShown = -2, capWord = -2;
@@ -762,6 +828,7 @@ function loadScene(i, opts = {}) {
   if (old) { old.classList.remove('enter'); old.classList.add('out'); later(() => old.remove(), 480); }
   if (!opts.poster) layer.classList.add('enter');
   seed = 101 + i * 31;
+  sceneHooks = [];
   B = Builder(layer); s.build(B); B.aimSlides();
   const moves = [['-14px', '-6px', 1.06, '40% 40%'], ['12px', '-8px', 1.055, '60% 45%'], ['-10px', '6px', 1.05, '45% 60%'], ['10px', '4px', 1.06, '55% 50%']][i % 4];
   B.cam.style.setProperty('--kx', moves[0]); B.cam.style.setProperty('--ky', moves[1]); B.cam.style.setProperty('--ks', moves[2]); B.cam.style.setProperty('--ko', moves[3]);
@@ -800,8 +867,8 @@ function stopMotionIn(e) {
   smAnims.add(a); if (playing && paused) a.pause();
   a.onfinish = () => { smAnims.delete(a); e.classList.add('boil'); e.style.animationDelay = (-Math.random()).toFixed(2) + 's'; };
 }
-function reveal(el, withSfx) { if (!el.classList) return; el.classList.remove('pre'); el.classList.add('in'); if (el.classList.contains('a-slide')) stopMotionIn(el); if (withSfx) sfx(el.dataset.sfx); }
-function fireCue(c) { c.items.forEach((el, k) => fireQueue.push({ at: clock + k * c.stagger, el, snd: k === 0 || el.dataset.sfx === 'stamp' || el.dataset.sfx === 'string' })); }
+function reveal(el, withSfx) { if (typeof el === 'function') { el(); return; } if (!el.classList) return; el.classList.remove('pre'); el.classList.add('in'); if (el.classList.contains('a-slide')) stopMotionIn(el); if (withSfx) sfx(el.dataset.sfx); }
+function fireCue(c) { c.items.forEach((el, k) => fireQueue.push({ at: clock + k * c.stagger, el, snd: k === 0 || (el.dataset && (el.dataset.sfx === 'stamp' || el.dataset.sfx === 'string' || el.dataset.sfx === 'marker')) })); }
 
 function speak(text) {
   speakAt = clock;
@@ -825,12 +892,13 @@ function wordIndexNow() {
 }
 function tick(now) {
   const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
-  if (!EXP) { drawDust(); update(dt); }
+  if (!EXP) { drawDust(); for (const f of frameHooks) f(dt); update(dt); }
   requestAnimationFrame(tick);
 }
 function update(dt) {
   if (playing && !paused && sceneIdx >= 0) {
     clock += dt;
+    for (const f of sceneHooks) f(clock, dt);
     const wi = wordIndexNow();
     const noVoice = !synth || !voices.length;
     if (EXP && !speechDone && speechStartAt !== null && clock - speechStartAt >= EXP.narration[sceneIdx].dur) { speechDone = true; doneAt = clock; }
@@ -878,9 +946,12 @@ $('#capBtn').addEventListener('click', e => { capOn = !capOn; e.target.setAttrib
 addEventListener('keydown', e => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); togglePause(); } });
 
 /* poster frame: scene 1 fully assembled behind the start button */
-fit(); { const m = /^#scene(\d)$/.exec(location.hash); loadScene(m ? Math.min(8, Math.max(0, m[1] - 1)) : 0, { poster: true }); } stage.classList.add('paused'); stage.classList.remove('paused');
+fit(); { const m = /^#scene(\d+)$/.exec(location.hash); loadScene(m ? Math.min(SCENES.length - 1, Math.max(0, m[1] - 1)) : 0, { poster: true }); } stage.classList.add('paused'); stage.classList.remove('paused');
 requestAnimationFrame(t => { lastT = t; tick(t); });
 document.fonts && document.fonts.ready.then(fit);
+
+/* scene plan, read by storyboard.js */
+window.__caseFile = { count: SCENES.length, scenes: SCENES.map(s => ({ kicker: s.kicker, title: s.title, say: s.say, fx: s.fx || [], assets: s.assets || [] })) };
 
 /* ---------- export hooks (used only by export.js) ---------- */
 if (EXP) {
@@ -891,7 +962,7 @@ if (EXP) {
     EXP.t += dt;
     EXP.timers = EXP.timers.filter(x => { if (EXP.t >= x.at) { x.fn(); return false; } return true; });
     if (playing && sceneIdx >= 0) update(dt);
-    drawDust();
+    drawDust(); for (const f of frameHooks) f(dt);
     for (const a of document.getAnimations()) {          // pin every CSS + WAAPI animation to the virtual clock
       if (!seen.has(a)) { seen.set(a, EXP.t); a.pause(); }
       const ct = (EXP.t - seen.get(a)) * 1000; a.currentTime = ct;
