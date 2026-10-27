@@ -40,7 +40,7 @@ Rules for the first second:
 
 ## 4. Pictures that push the story forward
 - **The hero changes state.** In every scene the hero visual *does* the point: splits, fills up, gets crossed out, freezes, stretches, lights up. Write it as a verb in the plan table's `visual change` column. A label sitting next to a picture is not a visual change.
-- **Something new every 2–3 seconds:** a clipping lands, a piece moves, the camera punches in, a stamp slams, a transition. No static hold longer than about 3 s unless the pause is the beat.
+- **Something new every 1–2 seconds:** a clipping lands, a piece moves, the camera punches in, a stamp slams, a transition. No static hold longer than 2 s unless the pause is the beat (`motion.js` flags it as dead air).
 - **Show it as it's said.** Cue the hero action on the key word of the narration, never before it and never long after.
 - **Vary the frame** (see the SKILL.md variety rules): full-screen moments, different transitions, camera moves.
 
@@ -63,7 +63,7 @@ Before the storyboard, check:
 - [ ] The ABT logline has a real BUT.
 - [ ] Three hooks were written and the winner passes all four tests.
 - [ ] Every scene raises or answers a question, and the first words chain with but / so / therefore.
-- [ ] Every scene has a visual-change verb, and something changes every 2–3 s.
+- [ ] Every scene has a visual-change verb, and something changes every 1–2 s.
 - [ ] Narration sounds like talking, not reading, and has no lecture openers.
 - [ ] The close answers, twists, then asks.
 - [ ] The accuracy pass is done: point of view named, speculation framed as speculation.

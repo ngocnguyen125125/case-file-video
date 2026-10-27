@@ -525,15 +525,18 @@ function Builder(layer, L = LAYOUTS.classic, head = true) {
     },
     // per-frame JS for custom effects (canvas, counters, flashlight...): fn(sceneClock, dt); export-safe
     onFrame(fn) { sceneHooks.push(fn); },
-    // big ransom-note question for hooks and comment prompts: each word slams in. hot = word indexes printed red (a final "?" word is red anyway).
+    // big ransom-note question for hooks and comment prompts: each word slams in. hot = word indexes printed red (a final "?" word is red anyway),
+    // colors = { index: css colour } paints chosen words in any colour (negative index counts from the end, e.g. { '-1': '#2f5a9a' }).
     // Returns { el, words }; cue the words early, e.g. B.cue('@0', q.words, { stagger: .07 })
-    question(text, { x = 24, y = 40, w = L.w - 48, size = 54, rot = -1, z = 45, hot = [] } = {}) {
+    question(text, { x = 24, y = 40, w = L.w - 48, size = 54, rot = -1, z = 45, hot = [], colors = {} } = {}) {
       const box = mk(`<div class="q" style="left:${x}px;top:${y}px;width:${w}px;font-size:${size}px;transform:rotate(${rot}deg);z-index:${z}"></div>`, cam);
       const all = text.split(/\s+/);
       const words = all.map((wd, i) => {
         const e = mk(`<div class="qw shadow-lg pre a-qpop" style="--r:${R(-4, 4).toFixed(1)}deg;transform:rotate(var(--r))"><div class="chip">${wd}</div></div>`, box);
         const c = e.firstChild, f = ['np-head', 'np-serif', 'np-inv', 'np-head', ''][(hashStr(wd) + i) % 5];
-        if (hot.includes(i) || (i === all.length - 1 && /\?$/.test(wd))) { c.style.cssText = 'background:var(--evidence);color:#fff;font-family:var(--f-display);text-transform:uppercase;font-weight:400'; }
+        const col = colors[i] ?? colors[i - all.length];   // colours: { 4: '#2f5a9a', '-1': '#2f5a9a' } (negative = from the end)
+        if (col) { c.style.cssText = `background:${col};color:#f4eedf;font-family:var(--f-display);text-transform:uppercase;font-weight:400`; }
+        else if (hot.includes(i) || (i === all.length - 1 && /\?$/.test(wd))) { c.style.cssText = 'background:var(--evidence);color:#fff;font-family:var(--f-display);text-transform:uppercase;font-weight:400'; }
         else if (f) c.classList.add(f);
         scissorCut(c, 4);
         e.dataset.sfx = i === all.length - 1 ? 'stamp' : 'paper';

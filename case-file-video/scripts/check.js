@@ -7,7 +7,8 @@
 //          B.hero(...), measured as one group; else the biggest single piece): warn when it covers under 10% of the frame
 //          AND spans under 75% of its width; text that platform UI, the title strip or the captions would cover (9:16:
 //          top 15% tabs, bottom 25% description, right-edge buttons); B.cue words that don't match any narration word;
-//          and pieces that are visible before their cue
+//          and pieces that are visible before their cue. Pieces whose centre ends off the board (flown out on purpose) and
+//          anything inside an element with data-lint="ignore" are skipped
 // fontsource_dir = node_modules/@fontsource after: npm i @fontsource/anton @fontsource/special-elite @fontsource/courier-prime @fontsource/old-standard-tt
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
@@ -43,9 +44,17 @@ const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Sp
         const layer = [...document.querySelectorAll('#board .layer')].pop();
         const toStage = rc => ({ x: (rc.left - st.left) * k, y: (rc.top - st.top) * k, w: rc.width * k, h: rc.height * k });
         const vis = e => { for (let x = e; x && x !== layer; x = x.parentElement) { const cs = getComputedStyle(x); if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) return false; } return true; };
-        const texts = [], corner = [];
+        const texts = [], corner = [], lr = layer.getBoundingClientRect();
+        // pieces deliberately parked off the board (flown out, knocked away) and anything inside data-lint="ignore" are not checked
+        const cam = layer.querySelector('.cam'), ccs = cam && getComputedStyle(cam), u = lr.width / (layer.offsetWidth || lr.width);
+        const ks = ccs ? parseFloat(ccs.getPropertyValue('--ks')) || 1 : 1, kx = ccs ? (parseFloat(ccs.getPropertyValue('--kx')) || 0) * u : 0, ky = ccs ? (parseFloat(ccs.getPropertyValue('--ky')) || 0) * u : 0;
+        const ko = (ccs ? ccs.getPropertyValue('--ko') : '') .trim().split(/\s+/).map(v => parseFloat(v) / 100), ox = lr.left + (isNaN(ko[0]) ? .5 : ko[0]) * lr.width, oy = lr.top + (isNaN(ko[1]) ? .5 : ko[1]) * lr.height;
+        const drift = ([l, t, r, b]) => [ox + (l - ox) * ks + kx, oy + (t - oy) * ks + ky, ox + (r - ox) * ks + kx, oy + (b - oy) * ks + ky];
+        const glyphs = e => { const rs = [...e.childNodes].filter(c => c.nodeType === 3 && c.textContent.trim()).map(c => { const g = document.createRange(); g.selectNodeContents(c); return g.getBoundingClientRect(); }).filter(r => r.width);
+          return rs.length ? { left: Math.min(...rs.map(r => r.left)), top: Math.min(...rs.map(r => r.top)), right: Math.max(...rs.map(r => r.right)), bottom: Math.max(...rs.map(r => r.bottom)) } : null; };
+        const off = e => { const r = e.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2; return cx < lr.left || cx > lr.right || cy < lr.top || cy > lr.bottom; };
         layer.querySelectorAll('*').forEach(e => {
-          if (e.closest('.news') || !vis(e)) return;
+          if (e.closest('.news') || e.closest('[data-lint="ignore"]') || !vis(e) || off(e)) return;
           const own = [...e.childNodes].filter(c => c.nodeType === 3).map(c => c.textContent.trim()).join(' ').trim();
           if (!own) return;
           const rc = e.getBoundingClientRect(), sc = e.offsetWidth ? rc.width / e.offsetWidth : 1;
@@ -58,6 +67,9 @@ const fontCSS = [F('Anton', 'anton', 400, 'anton-latin-400-normal.woff2'), F('Sp
           if (b.y + b.h > Z.bottom) hit.push('platform description (bottom)');
           if (N.head && b.y < L.head + 100) hit.push('the title strip');
           if (b.y + b.h > L.cap && b.y < L.cap + 92) hit.push('the captions');
+          // the camera drifts and zooms during every scene (.cam --kx/--ky/--ks around --ko): project the text to where the drift ends
+          const er = glyphs(e) || e.getBoundingClientRect(), [l2, t2, r2, b2] = drift([er.left, er.top, er.right, er.bottom]);   // the letters, not the paper's padding
+          if (Math.min(er.left, l2) < lr.left - 1 || Math.max(er.right, r2) > lr.right + 1 || Math.min(er.top, t2) < lr.top - 1 || Math.max(er.bottom, b2) > lr.bottom + 1) hit.push('the board edge (cut off as the camera drifts)');
           if (hit.length) corner.push(`"${tag}" under ${hit.join(' + ')}`);
         });
         texts.sort((a, b) => a.px - b.px);
