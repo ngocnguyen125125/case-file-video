@@ -17,7 +17,8 @@
 - When consecutive scenes use different shapes, the board animates into the new shape during the transition.
 - Inside a scene: `layer > .zoom (punch-ins) > .cam (Ken Burns drift) > pieces`. z-index guide: base papers 1, props 20–35, yellow labels 40, tape 60, highlights 65, stamps 70, strings 78, pins 80, markers 85.
 - Platform safe zone (9:16): keep key text out of `x > B.safe.x, y > B.safe.y` (TikTok/Reels buttons). Classic: x > 620, y > 260. Tall: x > 677, y > 579. Full: x > 620, y > 697. 16:9 has no button corner.
-- Legibility (checked by `check.js lint`): no text under 18 stage units (≈ 22 units on the 9:16 tall board), and a hero visual marked with `B.hero` that covers ≥ 10% of the frame or spans ≥ 75% of its width.
+- Legibility (checked by `check.js lint`): no text under 18 stage units (≈ 22 units on the 9:16 tall board), and a hero visual marked with `B.hero` that covers ≥ 10% of the frame or spans ≥ 75% of its width. Lint also flags text the camera drift pushes off the board edge. It skips pieces whose centre ends off the board (flown out on purpose) and anything inside `data-lint="ignore"`.
+- Motion (checked by `motion.js`): something new every ≤ 2 s, a first new piece by 1.5 s into each scene, and no mid-scene piece that appears without an entrance.
 
 ## A scene
 ```js
@@ -47,7 +48,7 @@
 | `B.shake(el, {deg, px, dur})` | Cue item: rattle a piece (dice roll) |
 | `B.flash()` | Cue item: white camera flash over the board + shutter sound |
 | `B.flashlight(pts, {r})` → `{el, off}` | Dark board with a searching beam; `pts = [[t,x,y],…]` in scene seconds and board units. Reveal `el` at `'@0'`, cue `off` to switch the lights on |
-| `B.question(text, {x,y,w,size,rot,z,hot})` → `{el, words}` | Big ransom-note question (hook, comment prompt). Every word is its own clipping; the last word ending in `?` and the words at indexes in `hot` print red. Cue the words early: `B.cue('@0', q.words, {stagger: .06})` |
+| `B.question(text, {x,y,w,size,rot,z,hot,colors})` → `{el, words}` | Big ransom-note question (hook, comment prompt). Every word is its own clipping; the last word ending in `?` and the words at indexes in `hot` print red. `colors: {index: css}` paints any word in its own colour (negative index counts from the end: `{ '-1': '#2f5a9a' }`). Cue the words early: `B.cue('@0', q.words, {stagger: .06})` |
 | `B.hero(...items)` | Mark the scene's hero visual (one element or a group). `check.js lint` measures it |
 | `B.fill(style, z)` | Full-board backdrop (e.g. `'background:#05040a'` for space). Reveal at `'@0'`. On dark backdrops, give stamps a paper back: `B.stamp(..., {paper: true})` (never set `opacity` in a piece's inline style: it overrides the hidden state, so the piece shows before its cue) |
 | `B.placeholder({x,y,w,h,label,rot,z})` | "ASSET NEEDED" card for the storyboard; swap it for the real asset later |
@@ -59,7 +60,7 @@
 - `FORMAT`: `'9:16'` (default) or `'16:9'`.
 - `BOARD_SHAPE`: `'tall'` (default for 9:16), `'classic'` (default for 16:9) or `'full'`.
 - `LOOK = { grain, flicker, scratches, weave }`: film look, 0 to 1.
-- `TOPIC:` markers: page `<title>`, series line, start note, end-card verdict.
+- `TOPIC:` markers: page `<title>`, series line, start note, end-card verdict. Set them, plus `FORMAT`, `BOARD_SHAPE` and `LOOK`, in `topic.json` and build with `build.py kit/engine.template.html stickers.js page.html --scenes scenes.js --topic topic.json`; don't edit the template.
 - `R(a,b)` = seeded random (layout stays identical between previews and export); `Math.random()` for per-frame jitter.
 
 ## Export-safety rules (the MP4 is rendered on a virtual clock)

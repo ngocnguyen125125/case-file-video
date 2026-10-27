@@ -5,10 +5,10 @@ A Claude skill that turns any knowledge topic into a ~60-second vertical explain
 ![preview](docs/preview.jpg)
 
 Each run produces:
-- **A playable web page**: the same neural narrator as the MP4 baked in, a generated noir-jazz score and paper sound effects, word-synced captions.
-- **Two output sizes**: vertical 1080×1920 (TikTok, Reels, Shorts) or horizontal 1920×1080 (YouTube, slides), with TikTok-safe placement of titles and captions.
-- **Built for attention**: a cold-open hook question in the first second, one central question told as a chain of clues, a board shape you choose (tall 4:5, classic 16:9 or full-frame), full-screen moments, varied transitions, big hero visuals checked by a legibility lint, and a twist + comment-question ending.
-- **An MP4**: 1080×1920 or 1920×1080, 30 fps, with an offline neural voice (Kokoro, picked per video from a menu of narrators), ready for TikTok, Reels, Shorts or YouTube.
+- **A playable web page**: a neural narrator baked in, a generated noir-jazz score and paper sound effects, word-synced captions, checked frame by frame for smooth motion.
+- **Sized for where you post**: Claude asks where the video is going and picks the size itself: vertical 1080×1920 (TikTok, Reels, Shorts) or horizontal 1920×1080 (YouTube, slides), with TikTok-safe placement of titles and captions.
+- **Built for attention**: a cold-open hook question in the first second, one central question told as a chain of clues, a board shape matched to the platform (tall 4:5, classic 16:9 or full-frame), full-screen moments, varied transitions, big hero visuals checked by a legibility lint, and a twist + comment-question ending.
+- **An MP4 on request**: 1080×1920 or 1920×1080, 30 fps, with an offline neural voice (Kokoro, picked per video from a menu of narrators), ready for TikTok, Reels, Shorts or YouTube.
 
 ## Install
 
@@ -25,7 +25,8 @@ Ask Claude something like *"Make a case-file video explaining how vaccines work"
 1. **Plans**: researches the topic, writes a creative brief and a scene table, and picks effects from the catalog.
 2. **Storyboards**: sends one image with every scene's frame, narration, effects and the assets it still needs.
 3. **Asks for media** it can't make itself (real photos, maps, a hand, your voiceover…), each with a fallback.
-4. **Builds, checks and exports**: a playable web page plus a 1080x1920 MP4 (−14 LUFS) and an .srt caption file.
+4. **Builds and checks**: a playable web page, checked for dead air, slow openings and pieces that pop in, with a time-stamped contact sheet of every scene.
+5. **Exports on request**: an MP4 (−14 LUFS) and an .srt caption file, about 10 minutes to render.
 
 Example storyboard sheet: [docs/storyboard-example.jpg](docs/storyboard-example.jpg)
 
@@ -40,8 +41,9 @@ case-file-video/
     engine.template.html   the player engine + worked example ("What is a token?")
     render_svgs.js         SVG props -> PNG
     stickers.py            PNG -> halftone newsprint cutouts (embedded in the page)
-    build.py               inlines cutouts (and the baked narration) into the page
-    check.js               headless QA (poster frames, playthrough)
+    build.py               builds the page: splices in scenes.js + topic.json, inlines cutouts and the baked narration
+    check.js               headless QA (poster frames, legibility lint, playthrough)
+    motion.js              motion QA on the export clock (dead air, slow opens, pops + contact sheets)
     storyboard.js          storyboard sheet: every scene's frame + narration, effects, assets needed
     narrate.py             Kokoro narration (voice blends, noir treatment) + word timings
     audition.py            renders one line in several voices to pick a narrator by ear
